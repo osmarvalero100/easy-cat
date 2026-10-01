@@ -120,7 +120,7 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden my-auto max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 bg-stone-50/90">
+        <div className="flex items-center justify-between px-7 sm:px-8 pt-7 sm:pt-8 pb-5 border-b border-stone-200/90 bg-stone-50/90">
           <div className="flex items-center space-x-3.5">
             <div className="p-2.5 rounded-2xl bg-amber-900 text-amber-50 shadow-xs">
               <Building2 className="w-5 h-5" />
@@ -144,7 +144,7 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="px-6 sm:px-8 py-6 sm:py-7 space-y-5 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="px-7 sm:px-8 pt-7 pb-7 space-y-5 overflow-y-auto flex-1">
           {errorMsg && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
               {errorMsg}

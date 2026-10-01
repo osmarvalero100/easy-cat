@@ -220,7 +220,7 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
       <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[85vh] my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 bg-stone-50/90">
+        <div className="flex items-center justify-between px-7 sm:px-8 pt-7 sm:pt-8 pb-5 border-b border-stone-200/90 bg-stone-50/90">
           <div className="flex items-center space-x-3.5">
             <div className="p-2.5 rounded-2xl bg-amber-900 text-amber-50 shadow-xs">
               <Layers className="w-5 h-5" />
@@ -257,7 +257,7 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
+        <div className="p-7 sm:p-8 overflow-y-auto flex-1">
           {isCreating ? (
             <form onSubmit={handleCreateCatalog} className="bg-stone-50 p-5 rounded-2xl border border-stone-200 space-y-4">
               <div className="flex items-center justify-between border-b border-stone-200 pb-3">
