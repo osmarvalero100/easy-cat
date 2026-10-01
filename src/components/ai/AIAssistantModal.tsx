@@ -128,17 +128,17 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[88vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[85vh] my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-stone-200 bg-linear-to-r from-stone-900 via-stone-850 to-stone-800 text-white">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 bg-linear-to-r from-stone-900 via-stone-850 to-stone-800 text-white">
+          <div className="flex items-center space-x-3.5">
+            <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold font-serif">Asistente Editorial con IA</h2>
-              <p className="text-xs text-stone-300">
+              <h2 className="text-base sm:text-lg font-bold font-serif">Asistente Editorial con IA</h2>
+              <p className="text-xs text-stone-300 mt-0.5">
                 Redacta descripciones sensoriales, textos de portada o extrae productos
               </p>
             </div>
@@ -149,7 +149,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
               type="button"
               onClick={onOpenAISettings}
               title="Configurar claves de IA"
-              className="px-2.5 py-1 text-xs text-stone-300 hover:text-white hover:bg-stone-700/60 rounded-lg flex items-center gap-1 transition"
+              className="px-3 py-1.5 text-xs text-stone-300 hover:text-white hover:bg-stone-700/60 rounded-xl flex items-center gap-1.5 transition border border-stone-700"
             >
               <Settings className="w-3.5 h-3.5 text-amber-400" />
               <span>Configuración</span>
@@ -157,7 +157,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-stone-400 hover:text-white hover:bg-stone-700/60 rounded-full transition"
+              className="p-2 text-stone-400 hover:text-white hover:bg-stone-700/60 rounded-full transition"
             >
               <X className="w-5 h-5" />
             </button>
@@ -165,7 +165,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-stone-200 bg-stone-50 px-6 pt-3 gap-4">
+        <div className="flex border-b border-stone-200 bg-stone-50 px-6 sm:px-8 pt-4 gap-6">
           <button
             type="button"
             onClick={() => {
@@ -211,7 +211,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="px-6 sm:px-8 py-6 sm:py-7 overflow-y-auto flex-1 space-y-5">
           {errorMsg && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />

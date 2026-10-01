@@ -103,19 +103,19 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden my-auto max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-stone-200 bg-linear-to-r from-stone-900 to-stone-800 text-white">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 bg-linear-to-r from-stone-900 to-stone-800 text-white">
+          <div className="flex items-center space-x-3.5">
+            <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold font-serif">
+              <h2 className="text-base sm:text-lg font-bold font-serif">
                 Configuración de Inteligencia Artificial (BYOK)
               </h2>
-              <p className="text-xs text-stone-300">
+              <p className="text-xs text-stone-300 mt-0.5">
                 Conecta tu propia suscripción o clave API para generar descripciones, textos y catálogos
               </p>
             </div>
@@ -123,14 +123,14 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ isOpen, onClos
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-white hover:bg-stone-700/60 rounded-full transition"
+            className="p-2 text-stone-400 hover:text-white hover:bg-stone-700/60 rounded-full transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+        <div className="px-6 sm:px-8 py-6 sm:py-7 space-y-6 overflow-y-auto flex-1">
           {message && (
             <div
               className={`p-3.5 rounded-xl text-xs flex items-center space-x-2 ${

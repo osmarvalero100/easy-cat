@@ -217,19 +217,19 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[88vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[85vh] my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-stone-200 bg-stone-50/90">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-amber-900 text-amber-50">
+        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 bg-stone-50/90">
+          <div className="flex items-center space-x-3.5">
+            <div className="p-2.5 rounded-2xl bg-amber-900 text-amber-50 shadow-xs">
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold font-serif text-stone-900">
+              <h2 className="text-base sm:text-lg font-bold font-serif text-stone-900">
                 Mis Catálogos
               </h2>
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-stone-500 mt-0.5">
                 Crea, duplica colecciones de temporada o cambia de catálogo activo
               </p>
             </div>
@@ -240,7 +240,7 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreating(true)}
-                className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+                className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
               >
                 <Plus className="w-3.5 h-3.5 text-amber-400" />
                 <span>Nuevo Catálogo</span>
@@ -249,7 +249,7 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-full transition"
+              className="p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 rounded-full transition"
             >
               <X className="w-5 h-5" />
             </button>
@@ -257,7 +257,7 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
           {isCreating ? (
             <form onSubmit={handleCreateCatalog} className="bg-stone-50 p-5 rounded-2xl border border-stone-200 space-y-4">
               <div className="flex items-center justify-between border-b border-stone-200 pb-3">

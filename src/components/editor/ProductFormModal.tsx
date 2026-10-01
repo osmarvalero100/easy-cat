@@ -191,32 +191,32 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/75 backdrop-blur-xs overflow-y-auto">
       <div
-        className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-white rounded-xl shadow-2xl overflow-hidden border border-stone-200 animate-in fade-in zoom-in-95 duration-200 z-[10000]"
+        className="relative w-full max-w-3xl max-h-[86vh] my-auto flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden border border-stone-200 animate-in fade-in zoom-in-95 duration-200 z-[10000]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-stone-50">
+        <div className="flex items-center justify-between px-6 sm:px-8 pt-6 pb-5 border-b border-stone-200 bg-stone-50/90">
           <div>
-            <h2 className="text-lg font-bold text-stone-900">
+            <h2 className="text-lg sm:text-xl font-bold font-serif text-stone-900">
               {product ? 'Editar Vela' : 'Nueva Vela Artesanal'}
             </h2>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-stone-500 mt-1">
               Configura nombre, medidas visuales, precio, fragancias, colores y qué incluye.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-stone-200 text-stone-500 transition-colors"
+            className="p-2 rounded-full hover:bg-stone-200/70 text-stone-400 hover:text-stone-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 sm:py-7 space-y-6">
           {/* Basic Info: Name, SKU, Price */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-6">
@@ -653,18 +653,18 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         </form>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-stone-50">
+        <div className="flex items-center justify-end gap-3 px-6 sm:px-8 py-4 sm:py-5 border-t border-stone-200 bg-stone-50/90">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-stone-600 hover:text-stone-900 border rounded-lg bg-white hover:bg-stone-50"
+            className="px-4 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900 border border-stone-300 rounded-xl bg-white hover:bg-stone-50 transition"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-5 py-2 text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 rounded-lg shadow-sm transition-all"
+            className="px-5 py-2 text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 rounded-xl shadow-sm transition"
           >
             {product ? 'Guardar Cambios' : 'Agregar Vela al Catálogo'}
           </button>

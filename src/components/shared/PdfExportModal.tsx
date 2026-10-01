@@ -63,30 +63,30 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/70 backdrop-blur-xs overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-stone-200 animate-in fade-in zoom-in-95 duration-200 z-[10000]"
+        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 sm:p-9 pt-8 sm:pt-9 border border-stone-200 animate-in fade-in zoom-in-95 duration-200 z-[10000] my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors"
+          className="absolute top-5 right-5 sm:top-6 sm:right-6 p-2 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center">
+        <div className="flex items-center gap-3.5 mb-6">
+          <div className="w-11 h-11 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0 shadow-2xs">
             <FileDown className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-stone-900">Exportar Catálogo en PDF</h3>
-            <p className="text-xs text-stone-500">Elige cómo deseas generar tu catálogo para clientes</p>
+            <h3 className="text-lg font-bold font-serif text-stone-900">Exportar Catálogo en PDF</h3>
+            <p className="text-xs text-stone-500 mt-0.5">Elige cómo deseas generar tu catálogo para clientes</p>
           </div>
         </div>
 
