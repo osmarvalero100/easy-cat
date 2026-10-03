@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Product, CandleColor } from '../../types/catalog';
 import { VisualDimensionIndicator } from '../preview/VisualDimensionIndicator';
-import { X, Upload, Plus, Trash2, Sparkles, Image as ImageIcon, PackageCheck, Check } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Sparkles, Image as ImageIcon, PackageCheck, Check, Loader2 } from 'lucide-react';
 
 interface ProductFormModalProps {
   product?: Product | null;
@@ -24,7 +24,7 @@ const DEFAULT_SUGGESTED_INCLUDES = [
 ];
 
 const SAMPLE_GALLERY_IMAGES = [
-  { label: 'Vela Pino & Navidad', url: 'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Vela Pino & Navidad', url: 'https://images.unsplash.com/photo-1637870103286-29728821676b?auto=format&fit=crop&w=800&q=80' },
   { label: 'Vela Canela Especiada', url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80' },
   { label: 'Vela Tazón Cerámica', url: 'https://images.unsplash.com/photo-1570823635306-250abb06d4b3?auto=format&fit=crop&w=800&q=80' },
   { label: 'Vela Romántica Rosa', url: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=800&q=80' },
@@ -108,6 +108,53 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#2D4A3E');
   const [newIncludeItem, setNewIncludeItem] = useState('');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleGenerateAIDescription = async () => {
+    setIsGeneratingAI(true);
+    setAiError(null);
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: 'product_description',
+          payload: {
+            name: formData.name || 'Vela Artesanal',
+            fragrances: formData.fragrances,
+            waxType: formData.waxType || 'Cera de Soya',
+            brandName: 'Artesanal',
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.code === 'NO_AI_CONFIGURED') {
+          setAiError('No tienes una clave de IA configurada. Ve a Asistente IA > Configuración.');
+        } else {
+          setAiError(data.error || 'Error al generar descripción con IA.');
+        }
+        return;
+      }
+
+      if (data.result?.description) {
+        setFormData((prev) => ({
+          ...prev,
+          description: data.result.description,
+          fragrances:
+            (!prev.fragrances || prev.fragrances.length === 0) && data.result.suggestedFragrances
+              ? data.result.suggestedFragrances
+              : prev.fragrances,
+        }));
+      }
+    } catch {
+      setAiError('Error de conexión con la IA.');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
   const [showGallery, setShowGallery] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,9 +311,25 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-              Descripción Corta & Sensorial
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
+                Descripción Corta & Sensorial
+              </label>
+              <button
+                type="button"
+                onClick={handleGenerateAIDescription}
+                disabled={isGeneratingAI}
+                className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 px-2 py-0.5 rounded-md flex items-center gap-1 transition disabled:opacity-50"
+                title="Generar redacción evocadora y notas de aroma con IA"
+              >
+                {isGeneratingAI ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                ) : (
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                )}
+                <span>Redactar con IA</span>
+              </button>
+            </div>
             <textarea
               rows={2}
               value={formData.description}
@@ -274,6 +337,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               placeholder="Describe los ingredientes, mecha crepitante, notas de aroma o inspiración artesanal..."
               className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
             />
+            {aiError && (
+              <p className="text-[11px] text-rose-600 mt-1">{aiError}</p>
+            )}
           </div>
 
           {/* Dimensions Section (Alto y Ancho con Diagrama Visual) */}

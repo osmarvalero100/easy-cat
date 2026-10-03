@@ -24,7 +24,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Tonos bosque profundo, dorados festivos, especias cálidas y pino silvestre.',
     defaultTitle: 'COLECCIÓN BOTÁNICA NAVIDEÑA',
     defaultSubtitle: 'Velas Aromáticas Vertidas a Mano · Edición Especial Festiva',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1637870103286-29728821676b?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'navidad',
       palette: {
@@ -78,7 +78,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Elegancia romántica en rosa empolvado, borgoña, notas florales dulces y luz cálida.',
     defaultTitle: 'AURA ROMÁNTICA',
     defaultSubtitle: 'Edición Especial San Valentín & Amistad',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1777107857801-ece87fefbfbe?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'amor_amistad',
       palette: {
@@ -122,7 +122,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Armonía floral serena en lilas suaves, salvia y blanco perla con aromas reconfortantes.',
     defaultTitle: 'ESENCIA MATERNAL',
     defaultSubtitle: 'Velas Artesanales para Celebrar a Mamá',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1596704017254-9b121068fb31?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1773866003935-c9840b47e139?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'madres',
       palette: {
@@ -166,7 +166,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Pasteles delicados en azul cielo y rosa tierno con notas a talco infantil, flor de algodón y vainilla pura.',
     defaultTitle: 'DULCE ESPERA & BIENVENIDA',
     defaultSubtitle: 'Velas Artesanales & Recuerdos para Baby Shower',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1732904956376-446fcf39214c?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'baby_shower',
       palette: {
@@ -210,7 +210,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Elegancia solemne en azul medianoche imperial, destellos de oro de laurel y aromas de honor y madera de cedro.',
     defaultTitle: 'EDICIÓN GRADUACIONES & ÉXITO',
     defaultSubtitle: 'Velas de Conmemoración, Honor & Reconocimiento Académico',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1641753343828-e7a5b75d7539?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'graduaciones',
       palette: {
@@ -254,7 +254,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Atmósfera de paz y devoción en blanco marfil, resplandor en pan de oro y fragancias sagradas de incienso, mirra y loto.',
     defaultTitle: 'LUZ SAGRADA & SACRAMENTOS',
     defaultSubtitle: 'Cirios & Velas Artesanales para Bautizos, Comuniones y Bodas',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1576426863848-c21f53c60b19?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1697926156905-c4fcd0504936?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'eventos_religiosos',
       palette: {
@@ -298,7 +298,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Calidez envolvente en terracotas, ámbar y especias tostadas para momentos acogedores.',
     defaultTitle: 'CALIDEZ DE OTOÑO',
     defaultSubtitle: 'Velas Esculpidas & Aromas Especiados',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1572726729207-a78d6feb18d7?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'otono',
       palette: {
@@ -383,7 +383,7 @@ export const SEASONAL_PRESETS: Record<SeasonKey, SeasonalPreset> = {
     description: 'Diseño libre con colores y tipografía a tu medida.',
     defaultTitle: 'CATÁLOGO DE PRODUCTOS',
     defaultSubtitle: 'Velas Artesanales Exclusivas',
-    defaultCoverImage: 'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=1200&q=80',
+    defaultCoverImage: 'https://images.unsplash.com/photo-1770924673746-8db86d424148?auto=format&fit=crop&w=1200&q=80',
     theme: {
       season: 'personalizado',
       palette: {

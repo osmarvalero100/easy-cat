@@ -408,7 +408,7 @@ export const INITIAL_CATALOG: Catalog = {
   editionYear: '2026',
   brandName: 'GAOS CANDLES',
   brandLogo: undefined,
-  coverImage: 'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=1200&q=80',
+  coverImage: 'https://images.unsplash.com/photo-1637870103286-29728821676b?auto=format&fit=crop&w=1200&q=80',
   introText: 'Cada una de nuestras velas está vertida a mano en pequeños lotes con cera de soya 100% vegetal, mechas de madera natural que emiten un relajante crepitar de chimenea, y fragancias prémium libres de ftalatos. Diseñadas para vestir tus espacios con calidez, luz y memoria olfativa.',
   featuredSectionTitle: 'Colección Destacada',
   regularSectionTitle: 'Velas & Aromas',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, SeasonKey } from '@/types/catalog';
 import {
   X,
@@ -18,6 +18,7 @@ interface AIAssistantModalProps {
   brandName: string;
   seasonTag?: string;
   currentProduct?: Product | null;
+  initialTab?: 'product' | 'intro' | 'extract';
   onApplyDescription?: (desc: string, fragrances?: string[]) => void;
   onApplyIntroText?: (intro: string) => void;
   onAddExtractedProducts?: (products: Partial<Product>[]) => void;
@@ -30,12 +31,13 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   brandName,
   seasonTag,
   currentProduct,
+  initialTab = 'product',
   onApplyDescription,
   onApplyIntroText,
   onAddExtractedProducts,
   onOpenAISettings,
 }) => {
-  const [activeTab, setActiveTab] = useState<'product' | 'intro' | 'extract'>('product');
+  const [activeTab, setActiveTab] = useState<'product' | 'intro' | 'extract'>(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -43,6 +45,19 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   const [productName, setProductName] = useState(currentProduct?.name || '');
   const [fragranceNotes, setFragranceNotes] = useState(currentProduct?.fragrances?.join(', ') || '');
   const [waxMaterial, setWaxMaterial] = useState(currentProduct?.waxType || 'Cera de Soya');
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
+      setProductName(currentProduct?.name || '');
+      setFragranceNotes(currentProduct?.fragrances?.join(', ') || '');
+      setWaxMaterial(currentProduct?.waxType || 'Cera de Soya');
+      setErrorMsg(null);
+      setGeneratedResult(null);
+    }
+  }, [isOpen, initialTab, currentProduct]);
 
   const [introPhilosophy, setIntroPhilosophy] = useState('');
   const [rawTextExtract, setRawTextExtract] = useState('');

@@ -5,11 +5,13 @@ import { BookOpen, Phone, AtSign, MapPin, Upload, Globe, Sparkles, Music2, Pin, 
 interface BrandContactEditorProps {
   catalog: Catalog;
   onChange: (catalog: Catalog) => void;
+  onOpenAIIntro?: () => void;
 }
 
 export const BrandContactEditor: React.FC<BrandContactEditorProps> = ({
   catalog,
   onChange,
+  onOpenAIIntro,
 }) => {
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,9 +156,22 @@ export const BrandContactEditor: React.FC<BrandContactEditorProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-stone-600 mb-1">
-            Texto Editorial de Bienvenida / Filosofía de Marca
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-semibold text-stone-600">
+              Texto Editorial de Bienvenida / Filosofía de Marca
+            </label>
+            {onOpenAIIntro && (
+              <button
+                type="button"
+                onClick={onOpenAIIntro}
+                className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 px-2 py-0.5 rounded-md flex items-center gap-1 transition"
+                title="Redactar texto de bienvenida con IA"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Redactar con IA</span>
+              </button>
+            )}
+          </div>
           <textarea
             rows={3}
             value={catalog.introText}

@@ -9,12 +9,14 @@ interface ProductListEditorProps {
   catalog: Catalog;
   onChange: (products: Product[]) => void;
   onUpdateCatalog?: (catalog: Catalog) => void;
+  onOpenAIExtract?: () => void;
 }
 
 export const ProductListEditor: React.FC<ProductListEditorProps> = ({
   catalog,
   onChange,
   onUpdateCatalog,
+  onOpenAIExtract,
 }) => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -83,14 +85,27 @@ export const ProductListEditor: React.FC<ProductListEditorProps> = ({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenNew}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-800 text-white rounded-lg text-xs font-bold hover:bg-emerald-900 shadow-sm transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Agregar Vela</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onOpenAIExtract && (
+            <button
+              type="button"
+              onClick={onOpenAIExtract}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-stone-900 text-amber-300 hover:text-amber-200 hover:bg-stone-800 border border-amber-500/30 rounded-lg text-xs font-bold shadow-2xs transition-all"
+              title="Extraer productos automáticamente desde un texto o lista desordenada con IA"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Extraer con IA</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleOpenNew}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-800 text-white rounded-lg text-xs font-bold hover:bg-emerald-900 shadow-sm transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Agregar Vela</span>
+          </button>
+        </div>
       </div>
 
       {/* Section Titles Settings */}

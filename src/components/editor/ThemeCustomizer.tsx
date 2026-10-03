@@ -34,22 +34,42 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
     if (!preset) return;
 
     const prevPreset = SEASONAL_PRESETS[catalog.theme.season];
+    const allPresetTitles = Object.values(SEASONAL_PRESETS).map((p) => p.defaultTitle);
     const isTitleDefault =
       !catalog.title ||
       catalog.title === prevPreset?.defaultTitle ||
+      allPresetTitles.includes(catalog.title) ||
       catalog.title === 'COLECCIÓN BOTÁNICA NAVIDEÑA' ||
       catalog.title === 'COLECCIÓN NAVIDEÑA';
 
+    const allPresetSubtitles = Object.values(SEASONAL_PRESETS).map((p) => p.defaultSubtitle);
     const isSubtitleDefault =
       !catalog.subtitle ||
       catalog.subtitle === prevPreset?.defaultSubtitle ||
+      allPresetSubtitles.includes(catalog.subtitle) ||
       catalog.subtitle === 'Velas Aromáticas Vertidas a Mano · Edición Especial Festiva' ||
       catalog.subtitle === 'Velas Botánicas & Aromáticas de Temporada';
+
+    const knownDefaultCoverIds = [
+      '1543257580-7269da773bf5',
+      '1764770591466-b6be05d380f4',
+      '1603006905003-be475563bc59',
+      '1596704017254-9b121068fb31',
+      '1513519245088-0e12902e5a38',
+      '1523240795612-9a054b0db644',
+      '1576426863848-c21f53c60b19',
+      '1509198397868-475647b2a1e5',
+      ...Object.values(SEASONAL_PRESETS).map((p) => {
+        const id = p.defaultCoverImage.split('?')[0].split('/').pop();
+        return id || '';
+      }).filter(Boolean),
+    ];
 
     const isCoverDefault =
       !catalog.coverImage ||
       catalog.coverImage === prevPreset?.defaultCoverImage ||
-      catalog.coverImage === 'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=1200&q=80';
+      Object.values(SEASONAL_PRESETS).some((p) => p.defaultCoverImage === catalog.coverImage) ||
+      knownDefaultCoverIds.some((id) => catalog.coverImage?.includes(id));
 
     const isSlugDefault =
       !catalog.slug ||

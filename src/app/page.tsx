@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Catalog, Project, User as UserType, hasCustomLogo, mergeContactWithProjectDefaults } from '../types/catalog';
+import { Catalog, Product, Project, User as UserType, hasCustomLogo, mergeContactWithProjectDefaults } from '../types/catalog';
 import { INITIAL_CATALOG } from '../data/defaultCatalog';
 import { saveCatalogToStorage, getCatalogFromStorage } from '../lib/storage';
 import { HeaderNavbar } from '../components/shared/HeaderNavbar';
@@ -43,6 +43,7 @@ export default function EasyCatMainPage() {
   const [isProjectSettingsNew, setIsProjectSettingsNew] = useState<boolean>(false);
   const [isAISettingsOpen, setIsAISettingsOpen] = useState<boolean>(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState<boolean>(false);
+  const [aiAssistantTab, setAiAssistantTab] = useState<'product' | 'intro' | 'extract'>('product');
 
   // Mobile tab state in Studio
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
@@ -203,6 +204,71 @@ export default function EasyCatMainPage() {
     setLastModifiedTime(Date.now());
   };
 
+  const handleApplyIntroText = (intro: string) => {
+    setCatalog((prev) => {
+      const updated = { ...prev, introText: intro };
+      saveCatalogToStorage(updated);
+      return updated;
+    });
+    setHasUnsavedChanges(true);
+    setLastModifiedTime(Date.now());
+  };
+
+  const handleAddExtractedProducts = (extracted: Partial<Product>[]) => {
+    setCatalog((prev) => {
+      const newProducts: Product[] = extracted.map((p, idx) => ({
+        id: `candle_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+        name: p.name || 'Nueva Vela Artesanal',
+        sku: p.sku || `VEL-${Math.floor(100 + Math.random() * 900)}`,
+        price: Number(p.price) || 35000,
+        currency: p.currency || prev.theme?.currencySymbol || '$',
+        description: p.description || '',
+        heightCm: Number(p.heightCm) || 10,
+        widthCm: Number(p.widthCm) || 7,
+        fragrances: Array.isArray(p.fragrances) && p.fragrances.length > 0 ? p.fragrances : ['Vainilla Botánica'],
+        colors:
+          Array.isArray(p.colors) && p.colors.length > 0
+            ? p.colors
+            : [
+                { name: 'Blanco Marfil', hex: '#FAF9F6' },
+                { name: 'Cera Natural', hex: '#EBE5D8' },
+              ],
+        includes: Array.isArray(p.includes) && p.includes.length > 0 ? p.includes : ['Caja de regalo artesanal'],
+        image: p.image || 'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=800&q=80',
+        burnTimeHours: Number(p.burnTimeHours) || 40,
+        waxType: p.waxType || 'Cera de Soya',
+        isSeasonalSpecial: Boolean(p.isSeasonalSpecial),
+      }));
+
+      const updated = {
+        ...prev,
+        products: [...prev.products, ...newProducts],
+      };
+      saveCatalogToStorage(updated);
+      return updated;
+    });
+    setHasUnsavedChanges(true);
+    setLastModifiedTime(Date.now());
+  };
+
+  const handleApplyDescription = (desc: string, fragrances?: string[]) => {
+    setCatalog((prev) => {
+      if (prev.products.length === 0) return prev;
+      const updatedProducts = [...prev.products];
+      updatedProducts[0] = {
+        ...updatedProducts[0],
+        description: desc,
+        fragrances:
+          fragrances && fragrances.length > 0 ? fragrances : updatedProducts[0].fragrances,
+      };
+      const updated = { ...prev, products: updatedProducts };
+      saveCatalogToStorage(updated);
+      return updated;
+    });
+    setHasUnsavedChanges(true);
+    setLastModifiedTime(Date.now());
+  };
+
   const handleSaveToDb = async () => {
     if (!currentUser) return;
     try {
@@ -324,6 +390,10 @@ export default function EasyCatMainPage() {
               setIsProjectSettingsOpen(true);
             }}
             onOpenProjectsDashboard={() => setCurrentView('dashboard')}
+            onOpenAIAssistant={() => {
+              setAiAssistantTab('product');
+              setIsAIAssistantOpen(true);
+            }}
             onOpenAISettings={() => setIsAISettingsOpen(true)}
             isSaved={isSaved}
             hasUnsavedChanges={hasUnsavedChanges}
@@ -401,6 +471,14 @@ export default function EasyCatMainPage() {
                 <CatalogEditor
                   catalog={catalog}
                   onChange={handleCatalogChange}
+                  onOpenAIIntro={() => {
+                    setAiAssistantTab('intro');
+                    setIsAIAssistantOpen(true);
+                  }}
+                  onOpenAIExtract={() => {
+                    setAiAssistantTab('extract');
+                    setIsAIAssistantOpen(true);
+                  }}
                 />
               </div>
             </aside>
@@ -487,6 +565,10 @@ export default function EasyCatMainPage() {
         onClose={() => setIsAIAssistantOpen(false)}
         brandName={currentProject?.name || catalog.brandName}
         seasonTag={catalog.seasonTag}
+        initialTab={aiAssistantTab}
+        onApplyIntroText={handleApplyIntroText}
+        onAddExtractedProducts={handleAddExtractedProducts}
+        onApplyDescription={handleApplyDescription}
         onOpenAISettings={() => {
           setIsAIAssistantOpen(false);
           setIsAISettingsOpen(true);

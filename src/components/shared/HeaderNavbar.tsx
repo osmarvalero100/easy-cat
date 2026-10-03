@@ -13,6 +13,7 @@ import {
   Building2,
   Sparkles,
   BookOpen,
+  Settings,
 } from 'lucide-react';
 
 interface HeaderNavbarProps {
@@ -26,6 +27,7 @@ interface HeaderNavbarProps {
   onOpenCatalogManager: () => void;
   onOpenProjectSettings: () => void;
   onOpenProjectsDashboard: () => void;
+  onOpenAIAssistant: () => void;
   onOpenAISettings: () => void;
   isSaved?: boolean;
   hasUnsavedChanges?: boolean;
@@ -43,6 +45,7 @@ export const HeaderNavbar: React.FC<HeaderNavbarProps> = ({
   onOpenCatalogManager,
   onOpenProjectSettings,
   onOpenProjectsDashboard,
+  onOpenAIAssistant,
   onOpenAISettings,
   isSaved = false,
   hasUnsavedChanges = false,
@@ -124,16 +127,26 @@ export const HeaderNavbar: React.FC<HeaderNavbarProps> = ({
 
         {/* Right: Actions & Tools */}
         <div className="flex items-center gap-2">
-          {/* AI Assistant Button */}
-          <button
-            type="button"
-            onClick={onOpenAISettings}
-            title="Configurar Inteligencia Artificial (BYOK)"
-            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-stone-800 text-amber-300 hover:text-amber-200 hover:bg-stone-700/90 border border-amber-500/30 flex items-center gap-1.5 shadow-2xs transition"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden lg:inline">Asistente IA</span>
-          </button>
+          {/* AI Assistant Button Group */}
+          <div className="flex items-center rounded-lg bg-stone-800 border border-amber-500/30 overflow-hidden shadow-2xs">
+            <button
+              type="button"
+              onClick={onOpenAIAssistant}
+              title="Abrir Asistente Editorial con IA"
+              className="px-2.5 py-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200 hover:bg-stone-750 flex items-center gap-1.5 transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Asistente IA</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenAISettings}
+              title="Configurar claves de IA (OpenAI / Gemini / Claude)"
+              className="px-2 py-1.5 text-stone-400 hover:text-amber-200 hover:bg-stone-750 border-l border-stone-700 transition"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           {/* Save Button */}
           <button
