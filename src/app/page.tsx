@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Catalog, Project, User as UserType } from '../types/catalog';
+import { Catalog, Project, User as UserType, hasCustomLogo } from '../types/catalog';
 import { INITIAL_CATALOG } from '../data/defaultCatalog';
 import { saveCatalogToStorage, getCatalogFromStorage } from '../lib/storage';
 import { HeaderNavbar } from '../components/shared/HeaderNavbar';
@@ -115,8 +115,12 @@ export default function EasyCatMainPage() {
           const catRes = await fetch(`/api/catalogs/${list[0].slug}`);
           if (catRes.ok) {
             const fullCat = await catRes.json();
-            setCatalog(fullCat);
-            saveCatalogToStorage(fullCat);
+            const effectiveLogo = (proj.logoUrl && hasCustomLogo(proj.logoUrl))
+              ? proj.logoUrl
+              : (hasCustomLogo(fullCat.brandLogo) ? fullCat.brandLogo : undefined);
+            const catWithLogo = { ...fullCat, brandLogo: effectiveLogo };
+            setCatalog(catWithLogo);
+            saveCatalogToStorage(catWithLogo);
             setHasUnsavedChanges(false);
             return;
           }
@@ -128,7 +132,7 @@ export default function EasyCatMainPage() {
         id: `cat_${proj.slug}_${Date.now().toString(36)}`,
         projectId: proj.id,
         brandName: proj.name,
-        brandLogo: proj.logoUrl,
+        brandLogo: (proj.logoUrl && hasCustomLogo(proj.logoUrl)) ? proj.logoUrl : undefined,
         slug: `${proj.slug}-catalogo`,
       };
       setCatalog(initialForProj);
@@ -145,12 +149,16 @@ export default function EasyCatMainPage() {
       if (res.ok) {
         const data = await res.json();
         if (data && data.id) {
-          setCatalog(data);
-          saveCatalogToStorage(data);
-          setHasUnsavedChanges(false);
           // Find matching project
           const match = currentProjectsList.find((p) => p.id === data.projectId);
           if (match) setCurrentProject(match);
+          const effectiveLogo = (match?.logoUrl && hasCustomLogo(match.logoUrl))
+            ? match.logoUrl
+            : (hasCustomLogo(data.brandLogo) ? data.brandLogo : undefined);
+          const catWithLogo = { ...data, brandLogo: effectiveLogo };
+          setCatalog(catWithLogo);
+          saveCatalogToStorage(catWithLogo);
+          setHasUnsavedChanges(false);
         }
       }
     } catch (err) {
@@ -200,7 +208,9 @@ export default function EasyCatMainPage() {
         ...catalog,
         projectId: currentProject?.id || catalog.projectId || 'default-project',
         brandName: currentProject?.name || catalog.brandName,
-        brandLogo: currentProject?.logoUrl || catalog.brandLogo,
+        brandLogo: (currentProject?.logoUrl && hasCustomLogo(currentProject.logoUrl))
+          ? currentProject.logoUrl
+          : (hasCustomLogo(catalog.brandLogo) ? catalog.brandLogo : undefined),
       };
 
       const res = await fetch('/api/catalogs', {
@@ -426,6 +436,7 @@ export default function EasyCatMainPage() {
         isOpen={isCatalogManagerOpen}
         onClose={() => setIsCatalogManagerOpen(false)}
         projectId={currentProject?.id || catalog.projectId || ''}
+        currentProject={currentProject}
         currentCatalogId={catalog.id}
         onSelectCatalog={(selected) => {
           setCatalog(selected);
@@ -453,7 +464,7 @@ export default function EasyCatMainPage() {
             ...prev,
             projectId: savedProj.id,
             brandName: savedProj.name,
-            brandLogo: savedProj.logoUrl || prev.brandLogo,
+            brandLogo: (savedProj.logoUrl && hasCustomLogo(savedProj.logoUrl)) ? savedProj.logoUrl : undefined,
           }));
         }}
       />

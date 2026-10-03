@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Catalog, SeasonKey } from '@/types/catalog';
+import { Catalog, Project, SeasonKey, DEFAULT_CATALOG_LOGO, hasCustomLogo } from '@/types/catalog';
 import { SEASONAL_PRESETS } from '@/data/seasonalThemes';
 import {
   X,
@@ -31,6 +31,7 @@ interface CatalogManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
+  currentProject?: Project | null;
   currentCatalogId: string;
   onSelectCatalog: (catalog: Catalog) => void;
 }
@@ -39,6 +40,7 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
   isOpen,
   onClose,
   projectId,
+  currentProject,
   currentCatalogId,
   onSelectCatalog,
 }) => {
@@ -102,12 +104,17 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
         subtitle: newSubtitle.trim() || preset.defaultSubtitle,
         seasonTag: preset.name,
         editionYear: new Date().getFullYear().toString(),
-        brandName: 'Mi Marca',
+        brandName: currentProject?.name || 'Mi Marca',
+        brandLogo: (currentProject?.logoUrl && hasCustomLogo(currentProject.logoUrl)) ? currentProject.logoUrl : undefined,
         coverImage: preset.defaultCoverImage,
         introText: 'Bienvenidos a nuestra colección.',
         theme: preset.theme,
         products: [],
-        contact: { whatsapp: '' },
+        contact: {
+          whatsapp: currentProject?.defaultContact?.whatsapp || '',
+          instagram: currentProject?.defaultContact?.instagram || '',
+          website: currentProject?.defaultContact?.website || '',
+        },
       };
 
       const res = await fetch('/api/catalogs', {

@@ -89,6 +89,43 @@ export interface Project {
   catalogCount?: number;
 }
 
+export const DEFAULT_CATALOG_LOGO = '/easy-cat-logo.svg';
+
+/**
+ * Checks whether a catalog or project has a real uploaded custom logo.
+ */
+export function hasCustomLogo(logo?: string | null): boolean {
+  if (!logo || typeof logo !== 'string') return false;
+  const trimmed = logo.trim();
+  if (!trimmed || trimmed === '/gaos-candles.svg' || trimmed === '/easy-cat-logo.svg') {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Extracts 1 or 2 monogram initials from a brand or project name.
+ * e.g. "Gaos Candles" -> "GC", "Velas Artesanales" -> "VA", "Aroma" -> "AR"
+ */
+export function getBrandInitials(name?: string): string {
+  if (!name || !name.trim()) return 'EC';
+  const clean = name.trim().replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]/g, ' ').trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return 'EC';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+/**
+ * Returns the effective catalog logo URL or undefined if none.
+ */
+export function getCatalogLogo(brandLogo?: string | null): string {
+  if (!hasCustomLogo(brandLogo)) {
+    return '';
+  }
+  return brandLogo!.trim();
+}
+
 export interface Catalog {
   id: string;
   projectId: string;

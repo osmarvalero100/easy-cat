@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Project, User } from '@/types/catalog';
+import { Project, User, hasCustomLogo, getBrandInitials } from '@/types/catalog';
 import {
   Building2,
   Plus,
@@ -135,15 +135,17 @@ export const ProjectsDashboardView: React.FC<ProjectsDashboardViewProps> = ({
                 <div className="p-6">
                   {/* Brand Logo & Name */}
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="w-14 h-14 rounded-2xl bg-stone-50 border border-stone-200 p-1 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-                      {proj.logoUrl ? (
+                    <div className="w-14 h-14 rounded-2xl bg-amber-50/70 border border-amber-200/60 p-1 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                      {hasCustomLogo(proj.logoUrl) ? (
                         <img
-                          src={proj.logoUrl}
+                          src={proj.logoUrl!}
                           alt={proj.name}
                           className="w-full h-full object-contain"
                         />
                       ) : (
-                        <Building2 className="w-6 h-6 text-stone-300" />
+                        <span className="font-serif font-bold text-lg text-amber-900 tracking-wider select-none">
+                          {getBrandInitials(proj.name)}
+                        </span>
                       )}
                     </div>
 

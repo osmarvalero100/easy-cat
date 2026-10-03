@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Catalog } from '../../types/catalog';
+import { Catalog, hasCustomLogo, getBrandInitials } from '../../types/catalog';
 import { MessageCircle, AtSign, MapPin, HeartHandshake, Sparkles, Globe, Music2, Pin, Share2, Edit2, Check } from 'lucide-react';
 
 interface CatalogBackCoverPageProps {
@@ -69,19 +69,29 @@ export const CatalogBackCoverPage: React.FC<CatalogBackCoverPageProps> = ({
 
       {/* Top Header */}
       <div className="relative z-10 text-center pt-2 sm:pt-4 flex flex-col items-center">
-        {(catalog.brandLogo || '/gaos-candles.svg') && (
-          <div
-            className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2.5 shadow-sm overflow-hidden border bg-white"
-            style={{ borderColor: `${palette.primary}25` }}
-          >
+        <div
+          className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2.5 shadow-sm overflow-hidden border"
+          style={{
+            borderColor: `${palette.primary}30`,
+            backgroundColor: hasCustomLogo(catalog.brandLogo) ? '#ffffff' : `${palette.primary}12`,
+          }}
+        >
+          {hasCustomLogo(catalog.brandLogo) ? (
             <img
-              src={catalog.brandLogo || '/gaos-candles.svg'}
-              alt={catalog.brandName || 'GAOS CANDLES'}
+              src={catalog.brandLogo!}
+              alt={catalog.brandName || 'Marca'}
               crossOrigin="anonymous"
               className="w-full h-full object-contain p-1 rounded-full"
             />
-          </div>
-        )}
+          ) : (
+            <span
+              className="font-serif font-bold text-lg sm:text-xl md:text-2xl tracking-wider select-none"
+              style={{ color: palette.primary }}
+            >
+              {getBrandInitials(catalog.brandName)}
+            </span>
+          )}
+        </div>
         <span
           className="text-xs font-semibold tracking-[0.25em] uppercase block mb-1"
           style={{ color: palette.secondary }}

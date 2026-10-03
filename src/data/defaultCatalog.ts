@@ -1,4 +1,4 @@
-import { Catalog, Product } from '../types/catalog';
+import { Catalog, Product, DEFAULT_CATALOG_LOGO } from '../types/catalog';
 import { SEASONAL_PRESETS } from './seasonalThemes';
 
 export const SAMPLE_CANDLES: Record<string, Product[]> = {
@@ -407,7 +407,7 @@ export const INITIAL_CATALOG: Catalog = {
   seasonTag: 'Navidad & Fin de Año 2026',
   editionYear: '2026',
   brandName: 'GAOS CANDLES',
-  brandLogo: '/gaos-candles.svg',
+  brandLogo: undefined,
   coverImage: 'https://images.unsplash.com/photo-1543257580-7269da773bf5?auto=format&fit=crop&w=1200&q=80',
   introText: 'Cada una de nuestras velas está vertida a mano en pequeños lotes con cera de soya 100% vegetal, mechas de madera natural que emiten un relajante crepitar de chimenea, y fragancias prémium libres de ftalatos. Diseñadas para vestir tus espacios con calidez, luz y memoria olfativa.',
   featuredSectionTitle: 'Colección Destacada',

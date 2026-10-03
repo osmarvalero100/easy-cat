@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'Easy Cat | Generador Editorial de Catálogos de Alta Gama',
   description: 'Crea, personaliza y comparte catálogos editoriales y de temporada para tus marcas y emprendimientos con exportación a PDF y enlace para clientes.',
   icons: {
-    icon: '/gaos-candles.svg',
+    icon: '/easy-cat-logo.svg',
   },
 };
 

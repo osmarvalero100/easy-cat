@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Catalog, Product } from '../../types/catalog';
+import { Catalog, Product, hasCustomLogo, getBrandInitials } from '../../types/catalog';
 import { VisualDimensionIndicator } from './VisualDimensionIndicator';
 import { FragranceBadgeList } from './FragranceBadgeList';
 import { ColorSwatchList } from './ColorSwatchList';
@@ -60,19 +60,29 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
         style={{ borderColor: palette.border }}
       >
         <div className="flex items-center gap-3">
-          {(catalog.brandLogo || '/gaos-candles.svg') && (
-            <div
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center overflow-hidden border bg-white shadow-xs shrink-0"
-              style={{ borderColor: `${palette.primary}25` }}
-            >
+          <div
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center overflow-hidden border shadow-xs shrink-0"
+            style={{
+              borderColor: `${palette.primary}30`,
+              backgroundColor: hasCustomLogo(catalog.brandLogo) ? '#ffffff' : `${palette.primary}12`,
+            }}
+          >
+            {hasCustomLogo(catalog.brandLogo) ? (
               <img
-                src={catalog.brandLogo || '/gaos-candles.svg'}
-                alt={catalog.brandName || 'GAOS CANDLES'}
+                src={catalog.brandLogo!}
+                alt={catalog.brandName || 'Marca'}
                 crossOrigin="anonymous"
                 className="w-full h-full object-contain p-0.5 rounded-full"
               />
-            </div>
-          )}
+            ) : (
+              <span
+                className="font-serif font-bold text-xs sm:text-sm tracking-wider select-none"
+                style={{ color: palette.primary }}
+              >
+                {getBrandInitials(catalog.brandName)}
+              </span>
+            )}
+          </div>
           <div>
             <span
               className="text-[10px] md:text-xs font-semibold tracking-[0.2em] uppercase block"

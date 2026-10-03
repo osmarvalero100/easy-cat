@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 import crypto from 'crypto';
-import { Catalog, Product, Project, UserAISettings } from '../types/catalog';
+import { Catalog, Product, Project, UserAISettings, DEFAULT_CATALOG_LOGO, getCatalogLogo, hasCustomLogo } from '../types/catalog';
 import { INITIAL_CATALOG } from '../data/defaultCatalog';
 
 // Global connection pool singleton to prevent exhausting connections during Next.js dev hot-reload
@@ -482,8 +482,14 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
   const pool = getPool();
 
   const query = userId
-    ? 'SELECT * FROM catalogs WHERE (id = ? OR slug = ?) AND user_id = ? LIMIT 1'
-    : 'SELECT * FROM catalogs WHERE id = ? OR slug = ? LIMIT 1';
+    ? `SELECT c.*, p.logo_url as project_logo_url
+       FROM catalogs c
+       LEFT JOIN projects p ON c.project_id = p.id
+       WHERE (c.id = ? OR c.slug = ?) AND c.user_id = ? LIMIT 1`
+    : `SELECT c.*, p.logo_url as project_logo_url
+       FROM catalogs c
+       LEFT JOIN projects p ON c.project_id = p.id
+       WHERE c.id = ? OR c.slug = ? LIMIT 1`;
   const params = userId ? [idOrSlug, idOrSlug, userId] : [idOrSlug, idOrSlug];
 
   const [catRows] = await pool.query<mysql.RowDataPacket[]>(query, params);
@@ -516,6 +522,12 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
     sortOrder: Number(p.sort_order || 0),
   }));
 
+  const effectiveLogo = (cat.brand_logo && hasCustomLogo(cat.brand_logo))
+    ? cat.brand_logo
+    : (cat.project_logo_url && hasCustomLogo(cat.project_logo_url)
+        ? cat.project_logo_url
+        : undefined);
+
   return {
     id: cat.id,
     projectId: cat.project_id,
@@ -526,7 +538,7 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
     seasonTag: cat.season_tag || '',
     editionYear: cat.edition_year || '',
     brandName: cat.brand_name || '',
-    brandLogo: cat.brand_logo || undefined,
+    brandLogo: effectiveLogo,
     coverImage: cat.cover_image || '',
     introText: cat.intro_text || '',
     featuredSectionTitle: cat.featured_section_title || 'Colección Destacada',
@@ -621,7 +633,7 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<voi
         catalog.seasonTag || '',
         catalog.editionYear || '',
         catalog.brandName || '',
-        catalog.brandLogo || null,
+        hasCustomLogo(catalog.brandLogo) ? catalog.brandLogo : null,
         catalog.coverImage || '',
         catalog.introText || '',
         catalog.featuredSectionTitle || 'Colección Destacada',

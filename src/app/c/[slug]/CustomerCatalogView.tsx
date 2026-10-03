@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Catalog, Product } from '../../../types/catalog';
+import { Catalog, Product, hasCustomLogo, getBrandInitials } from '../../../types/catalog';
 import { INITIAL_CATALOG } from '../../../data/defaultCatalog';
 import { decodeCatalogFromShareUrl, getCatalogFromStorage } from '../../../lib/storage';
 import { CatalogPreview } from '../../../components/preview/CatalogPreview';
@@ -182,12 +182,27 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200 shadow-2xs print:hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white p-1 border border-stone-200 overflow-hidden shadow-2xs shrink-0 flex items-center justify-center">
-              <img
-                src={catalog.brandLogo || '/gaos-candles.svg'}
-                alt={catalog.brandName || 'GAOS CANDLES'}
-                className="w-full h-full object-contain"
-              />
+            <div
+              className="w-10 h-10 rounded-full p-1 border overflow-hidden shadow-2xs shrink-0 flex items-center justify-center transition-all"
+              style={{
+                borderColor: `${catalog.theme.palette.primary}30`,
+                backgroundColor: hasCustomLogo(catalog.brandLogo) ? '#ffffff' : `${catalog.theme.palette.primary}12`,
+              }}
+            >
+              {hasCustomLogo(catalog.brandLogo) ? (
+                <img
+                  src={catalog.brandLogo!}
+                  alt={catalog.brandName || 'Marca'}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span
+                  className="font-serif font-bold text-xs sm:text-sm tracking-wider select-none"
+                  style={{ color: catalog.theme.palette.primary }}
+                >
+                  {getBrandInitials(catalog.brandName)}
+                </span>
+              )}
             </div>
             <div>
               <span
@@ -298,18 +313,28 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
         <main className="max-w-6xl mx-auto w-full px-4 py-8 flex-1">
           {/* Header Banner */}
           <div className="text-center max-w-2xl mx-auto mb-8 flex flex-col items-center">
-            {(catalog.brandLogo || '/gaos-candles.svg') && (
-              <div
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-3 shadow-xs overflow-hidden border bg-white"
-                style={{ borderColor: `${catalog.theme.palette.primary}25` }}
-              >
+            <div
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-3 shadow-xs overflow-hidden border transition-all"
+              style={{
+                borderColor: `${catalog.theme.palette.primary}30`,
+                backgroundColor: hasCustomLogo(catalog.brandLogo) ? '#ffffff' : `${catalog.theme.palette.primary}12`,
+              }}
+            >
+              {hasCustomLogo(catalog.brandLogo) ? (
                 <img
-                  src={catalog.brandLogo || '/gaos-candles.svg'}
-                  alt={catalog.brandName || 'GAOS CANDLES'}
+                  src={catalog.brandLogo!}
+                  alt={catalog.brandName || 'Marca'}
                   className="w-full h-full object-contain p-1 rounded-full"
                 />
-              </div>
-            )}
+              ) : (
+                <span
+                  className="font-serif font-bold text-xl sm:text-2xl tracking-wider select-none"
+                  style={{ color: catalog.theme.palette.primary }}
+                >
+                  {getBrandInitials(catalog.brandName)}
+                </span>
+              )}
+            </div>
             <span
               className="text-xs uppercase tracking-widest font-bold block mb-1"
               style={{ color: catalog.theme.palette.secondary }}

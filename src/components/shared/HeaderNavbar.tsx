@@ -1,5 +1,5 @@
 import React from 'react';
-import { Catalog, Project } from '../../types/catalog';
+import { Catalog, Project, hasCustomLogo, getBrandInitials } from '../../types/catalog';
 import {
   FileDown,
   Share2,
@@ -86,11 +86,13 @@ export const HeaderNavbar: React.FC<HeaderNavbarProps> = ({
               title="Configurar datos generales del emprendimiento (nombre, logo, contacto)"
               className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-stone-800/90 text-stone-200 hover:bg-stone-700/80 border border-stone-700/70 flex items-center gap-2 transition"
             >
-              <div className="w-4 h-4 rounded-full overflow-hidden bg-stone-700 flex items-center justify-center shrink-0">
-                {currentProject?.logoUrl ? (
-                  <img src={currentProject.logoUrl} alt="" className="w-full h-full object-cover" />
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-amber-950/80 border border-amber-800/80 flex items-center justify-center shrink-0">
+                {hasCustomLogo(currentProject?.logoUrl) ? (
+                  <img src={currentProject!.logoUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <Building2 className="w-2.5 h-2.5 text-stone-300" />
+                  <span className="font-serif font-bold text-[9px] text-amber-300 select-none">
+                    {getBrandInitials(currentProject?.name || catalog.brandName)}
+                  </span>
                 )}
               </div>
               <span className="max-w-[110px] sm:max-w-[140px] truncate font-semibold">

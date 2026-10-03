@@ -1,5 +1,6 @@
 import type { Metadata, ResolvingMetadata } from 'next';
 import { getCatalogByIdOrSlug } from '@/lib/db';
+import { DEFAULT_CATALOG_LOGO } from '@/types/catalog';
 import { CustomerCatalogView } from './CustomerCatalogView';
 
 interface PageProps {
@@ -39,13 +40,13 @@ export async function generateMetadata(
     openGraph: {
       title: htmlTitle,
       description: description || undefined,
-      images: catalog?.coverImage ? [catalog.coverImage] : ['/gaos-candles.svg'],
+      images: catalog?.coverImage ? [catalog.coverImage] : [DEFAULT_CATALOG_LOGO],
     },
     twitter: {
       card: 'summary_large_image',
       title: htmlTitle,
       description: description || undefined,
-      images: catalog?.coverImage ? [catalog.coverImage] : ['/gaos-candles.svg'],
+      images: catalog?.coverImage ? [catalog.coverImage] : [DEFAULT_CATALOG_LOGO],
     },
   };
 }

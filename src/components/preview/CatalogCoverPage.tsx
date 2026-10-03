@@ -1,5 +1,5 @@
 import React from 'react';
-import { Catalog } from '../../types/catalog';
+import { Catalog, hasCustomLogo, getBrandInitials } from '../../types/catalog';
 import { Flame } from 'lucide-react';
 
 interface CatalogCoverPageProps {
@@ -37,21 +37,26 @@ export const CatalogCoverPage: React.FC<CatalogCoverPageProps> = ({
       {/* Top Header / Brand Logo & Season Badge */}
       <div className="relative z-10 flex flex-col items-center text-center pt-2">
         <div
-          className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm overflow-hidden border bg-white"
+          className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm overflow-hidden border transition-all"
           style={{
-            borderColor: `${palette.primary}25`,
-            backgroundColor: '#ffffff',
+            borderColor: `${palette.primary}30`,
+            backgroundColor: hasCustomLogo(catalog.brandLogo) ? '#ffffff' : `${palette.primary}12`,
           }}
         >
-          {catalog.brandLogo || '/gaos-candles.svg' ? (
+          {hasCustomLogo(catalog.brandLogo) ? (
             <img
-              src={catalog.brandLogo || '/gaos-candles.svg'}
-              alt={catalog.brandName || 'GAOS CANDLES'}
+              src={catalog.brandLogo!}
+              alt={catalog.brandName || 'Marca'}
               crossOrigin="anonymous"
               className="w-full h-full object-contain p-1.5 rounded-full"
             />
           ) : (
-            <Flame className="w-8 h-8 sm:w-10 sm:h-10" style={{ color: palette.primary }} />
+            <span
+              className="font-serif font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider select-none"
+              style={{ color: palette.primary }}
+            >
+              {getBrandInitials(catalog.brandName)}
+            </span>
           )}
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Project } from '@/types/catalog';
+import { Project, hasCustomLogo, getBrandInitials } from '@/types/catalog';
 import { X, Building2, Upload, Trash2, Check, Loader2, DollarSign, Phone, AtSign, Globe } from 'lucide-react';
 
 interface ProjectSettingsModalProps {
@@ -157,11 +157,13 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
               Logo del Emprendimiento
             </label>
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 flex items-center justify-center overflow-hidden shrink-0">
-                {logoUrl ? (
+              <div className="w-16 h-16 rounded-2xl border-2 border-stone-200 bg-amber-50/60 flex items-center justify-center overflow-hidden shrink-0">
+                {hasCustomLogo(logoUrl) ? (
                   <img src={logoUrl} alt="Logo Preview" className="w-full h-full object-contain p-1" />
                 ) : (
-                  <Building2 className="w-7 h-7 text-stone-300" />
+                  <span className="font-serif font-bold text-2xl text-amber-900 select-none">
+                    {getBrandInitials(name || 'Mi Marca')}
+                  </span>
                 )}
               </div>
               <div className="flex-1 space-y-1">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Catalog } from '../../types/catalog';
+import { Catalog, hasCustomLogo, getBrandInitials } from '../../types/catalog';
 import { BookOpen, Phone, AtSign, MapPin, Upload, Globe, Sparkles, Music2, Pin, Plus, Trash2, Share2 } from 'lucide-react';
 
 interface BrandContactEditorProps {
@@ -210,12 +210,27 @@ export const BrandContactEditor: React.FC<BrandContactEditorProps> = ({
             </span>
           </label>
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full overflow-hidden border border-stone-200 bg-white flex-shrink-0 flex items-center justify-center p-1.5 shadow-2xs">
-              <img
-                src={catalog.brandLogo || '/gaos-candles.svg'}
-                alt="Logo de Marca"
-                className="w-full h-full object-contain"
-              />
+            <div
+              className="w-20 h-20 rounded-full overflow-hidden border flex-shrink-0 flex items-center justify-center p-1.5 shadow-2xs transition-all"
+              style={{
+                borderColor: `${catalog.theme?.palette?.primary || '#78350f'}30`,
+                backgroundColor: hasCustomLogo(catalog.brandLogo) ? '#ffffff' : `${catalog.theme?.palette?.primary || '#78350f'}12`,
+              }}
+            >
+              {hasCustomLogo(catalog.brandLogo) ? (
+                <img
+                  src={catalog.brandLogo!}
+                  alt="Logo de Marca"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span
+                  className="font-serif font-bold text-2xl tracking-wider select-none"
+                  style={{ color: catalog.theme?.palette?.primary || '#78350f' }}
+                >
+                  {getBrandInitials(catalog.brandName)}
+                </span>
+              )}
             </div>
             <div className="flex-1 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -229,22 +244,27 @@ export const BrandContactEditor: React.FC<BrandContactEditorProps> = ({
                     className="hidden"
                   />
                 </label>
-                <button
-                  type="button"
-                  onClick={() => onChange({ ...catalog, brandLogo: '/gaos-candles.svg' })}
-                  className="px-2.5 py-1.5 border border-stone-200 rounded-lg text-[11px] font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
-                  title="Restablecer al logo predeterminado de GAOS CANDLES"
-                >
-                  Restablecer por Defecto
-                </button>
+                {hasCustomLogo(catalog.brandLogo) && (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...catalog, brandLogo: '' })}
+                    className="px-2.5 py-1.5 border border-stone-200 rounded-lg text-[11px] font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+                    title="Quitar logo y usar iniciales de la marca"
+                  >
+                    Usar Iniciales (Sin Logo)
+                  </button>
+                )}
               </div>
               <input
                 type="text"
                 value={catalog.brandLogo || ''}
                 onChange={(e) => onChange({ ...catalog, brandLogo: e.target.value })}
-                placeholder="/gaos-candles.svg o URL externa"
+                placeholder="URL de imagen o déjalo vacío para usar iniciales"
                 className="w-full px-3 py-1.5 text-xs border rounded-md focus:ring-1 focus:ring-emerald-600 focus:outline-none font-mono"
               />
+              <p className="text-[11px] text-stone-400">
+                Si no se sube un logo al proyecto, en los catálogos se mostrarán automáticamente las iniciales del nombre.
+              </p>
             </div>
           </div>
         </div>
