@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Catalog, Project, User as UserType, hasCustomLogo } from '../types/catalog';
+import { Catalog, Project, User as UserType, hasCustomLogo, mergeContactWithProjectDefaults } from '../types/catalog';
 import { INITIAL_CATALOG } from '../data/defaultCatalog';
 import { saveCatalogToStorage, getCatalogFromStorage } from '../lib/storage';
 import { HeaderNavbar } from '../components/shared/HeaderNavbar';
@@ -118,7 +118,8 @@ export default function EasyCatMainPage() {
             const effectiveLogo = (proj.logoUrl && hasCustomLogo(proj.logoUrl))
               ? proj.logoUrl
               : (hasCustomLogo(fullCat.brandLogo) ? fullCat.brandLogo : undefined);
-            const catWithLogo = { ...fullCat, brandLogo: effectiveLogo };
+            const effectiveContact = mergeContactWithProjectDefaults(fullCat.contact, proj.defaultContact);
+            const catWithLogo = { ...fullCat, brandLogo: effectiveLogo, contact: effectiveContact };
             setCatalog(catWithLogo);
             saveCatalogToStorage(catWithLogo);
             setHasUnsavedChanges(false);
@@ -133,6 +134,7 @@ export default function EasyCatMainPage() {
         projectId: proj.id,
         brandName: proj.name,
         brandLogo: (proj.logoUrl && hasCustomLogo(proj.logoUrl)) ? proj.logoUrl : undefined,
+        contact: mergeContactWithProjectDefaults({}, proj.defaultContact),
         slug: `${proj.slug}-catalogo`,
       };
       setCatalog(initialForProj);
@@ -155,7 +157,8 @@ export default function EasyCatMainPage() {
           const effectiveLogo = (match?.logoUrl && hasCustomLogo(match.logoUrl))
             ? match.logoUrl
             : (hasCustomLogo(data.brandLogo) ? data.brandLogo : undefined);
-          const catWithLogo = { ...data, brandLogo: effectiveLogo };
+          const effectiveContact = mergeContactWithProjectDefaults(data.contact, match?.defaultContact);
+          const catWithLogo = { ...data, brandLogo: effectiveLogo, contact: effectiveContact };
           setCatalog(catWithLogo);
           saveCatalogToStorage(catWithLogo);
           setHasUnsavedChanges(false);
@@ -459,13 +462,18 @@ export default function EasyCatMainPage() {
             setProjects(data.projects || []);
           }
           setCurrentProject(savedProj);
-          // If in studio, update current catalog brandName/logo
-          setCatalog((prev) => ({
-            ...prev,
-            projectId: savedProj.id,
-            brandName: savedProj.name,
-            brandLogo: (savedProj.logoUrl && hasCustomLogo(savedProj.logoUrl)) ? savedProj.logoUrl : undefined,
-          }));
+          // If in studio, update current catalog brandName/logo and default contact
+          setCatalog((prev) => {
+            const updated = {
+              ...prev,
+              projectId: savedProj.id,
+              brandName: savedProj.name,
+              brandLogo: (savedProj.logoUrl && hasCustomLogo(savedProj.logoUrl)) ? savedProj.logoUrl : undefined,
+              contact: mergeContactWithProjectDefaults(prev.contact, savedProj.defaultContact),
+            };
+            saveCatalogToStorage(updated);
+            return updated;
+          });
         }}
       />
 

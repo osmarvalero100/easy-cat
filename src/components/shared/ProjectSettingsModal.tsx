@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Project, hasCustomLogo, getBrandInitials } from '@/types/catalog';
-import { X, Building2, Upload, Trash2, Check, Loader2, DollarSign, Phone, AtSign, Globe } from 'lucide-react';
+import { X, Building2, Upload, Trash2, Check, Loader2, DollarSign, Phone, AtSign, Globe, Music2, Pin } from 'lucide-react';
 
 interface ProjectSettingsModalProps {
   isOpen: boolean;
@@ -23,6 +23,9 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
   const [defaultCurrency, setDefaultCurrency] = useState('$');
   const [whatsapp, setWhatsapp] = useState('');
   const [instagram, setInstagram] = useState('');
+  const [facebook, setFacebook] = useState('');
+  const [tiktok, setTiktok] = useState('');
+  const [pinterest, setPinterest] = useState('');
   const [website, setWebsite] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -37,6 +40,9 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
       setDefaultCurrency(project.defaultCurrency || '$');
       setWhatsapp(project.defaultContact?.whatsapp || '');
       setInstagram(project.defaultContact?.instagram || '');
+      setFacebook(project.defaultContact?.facebook || '');
+      setTiktok(project.defaultContact?.tiktok || '');
+      setPinterest(project.defaultContact?.pinterest || '');
       setWebsite(project.defaultContact?.website || '');
     } else {
       setName('');
@@ -45,6 +51,9 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
       setDefaultCurrency('$');
       setWhatsapp('');
       setInstagram('');
+      setFacebook('');
+      setTiktok('');
+      setPinterest('');
       setWebsite('');
     }
     setErrorMsg(null);
@@ -93,8 +102,11 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
           defaultCurrency,
           defaultContact: {
             whatsapp: whatsapp.trim(),
-            instagram: instagram.trim(),
             website: website.trim(),
+            instagram: instagram.trim(),
+            facebook: facebook.trim(),
+            tiktok: tiktok.trim(),
+            pinterest: pinterest.trim(),
           },
         }),
       });
@@ -304,6 +316,60 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-stone-600 mb-1">Facebook</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400 font-bold text-xs">
+                    f
+                  </div>
+                  <input
+                    type="text"
+                    value={facebook}
+                    onChange={(e) => setFacebook(e.target.value)}
+                    placeholder="facebook.com/tumarca"
+                    className="w-full pl-8 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-900/30 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-stone-600 mb-1">TikTok</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                    <Music2 className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={tiktok}
+                    onChange={(e) => setTiktok(e.target.value)}
+                    placeholder="@tu.marca"
+                    className="w-full pl-8 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-900/30 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-stone-600 mb-1">Pinterest</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                    <Pin className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={pinterest}
+                    onChange={(e) => setPinterest(e.target.value)}
+                    placeholder="pinterest.com/tumarca"
+                    className="w-full pl-8 pr-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-900/30 transition"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-stone-400">
+              Estos datos de contacto y redes se asignarán automáticamente como valores por defecto en los catálogos del emprendimiento que aún no tengan uno personalizado.
+            </p>
           </div>
 
           {/* Footer buttons */}

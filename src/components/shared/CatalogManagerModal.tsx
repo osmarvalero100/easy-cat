@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Catalog, Project, SeasonKey, DEFAULT_CATALOG_LOGO, hasCustomLogo } from '@/types/catalog';
+import { Catalog, Project, SeasonKey, DEFAULT_CATALOG_LOGO, hasCustomLogo, mergeContactWithProjectDefaults } from '@/types/catalog';
 import { SEASONAL_PRESETS } from '@/data/seasonalThemes';
 import {
   X,
@@ -110,11 +110,7 @@ export const CatalogManagerModal: React.FC<CatalogManagerModalProps> = ({
         introText: 'Bienvenidos a nuestra colección.',
         theme: preset.theme,
         products: [],
-        contact: {
-          whatsapp: currentProject?.defaultContact?.whatsapp || '',
-          instagram: currentProject?.defaultContact?.instagram || '',
-          website: currentProject?.defaultContact?.website || '',
-        },
+        contact: mergeContactWithProjectDefaults({}, currentProject?.defaultContact),
       };
 
       const res = await fetch('/api/catalogs', {

@@ -126,6 +126,42 @@ export function getCatalogLogo(brandLogo?: string | null): string {
   return brandLogo!.trim();
 }
 
+/**
+ * Merges a catalog's contact info with a project's default contact info.
+ * Any field that already has a non-empty value in the catalog is preserved.
+ * Any empty or missing field is populated with the project's default value.
+ */
+export function mergeContactWithProjectDefaults(
+  catalogContact?: Partial<ContactInfo> | null,
+  projectContact?: Partial<ContactInfo> | null
+): ContactInfo {
+  const cat = catalogContact || {};
+  const proj = projectContact || {};
+
+  // Treat legacy demo contact placeholders as unassigned so project defaults take precedence
+  const isDemoWhatsapp = cat.whatsapp === '+57 300 123 4567';
+  const isDemoInstagram = cat.instagram === '@gaos.candles';
+  const isDemoWebsite = cat.website === 'https://gaoscandles.com';
+
+  const catWhatsapp = isDemoWhatsapp ? '' : (cat.whatsapp?.trim() || '');
+  const catInstagram = isDemoInstagram ? '' : (cat.instagram?.trim() || '');
+  const catWebsite = isDemoWebsite ? '' : (cat.website?.trim() || '');
+
+  return {
+    whatsapp: catWhatsapp || (proj.whatsapp?.trim() || ''),
+    website: catWebsite || (proj.website?.trim() || ''),
+    instagram: catInstagram || (proj.instagram?.trim() || ''),
+    facebook: cat.facebook && cat.facebook.trim() ? cat.facebook.trim() : (proj.facebook?.trim() || ''),
+    tiktok: cat.tiktok && cat.tiktok.trim() ? cat.tiktok.trim() : (proj.tiktok?.trim() || ''),
+    pinterest: cat.pinterest && cat.pinterest.trim() ? cat.pinterest.trim() : (proj.pinterest?.trim() || ''),
+    location: cat.location && cat.location.trim() ? cat.location.trim() : (proj.location?.trim() || ''),
+    deliveryNotes: cat.deliveryNotes && cat.deliveryNotes.trim() ? cat.deliveryNotes.trim() : (proj.deliveryNotes?.trim() || ''),
+    customSocials: (cat.customSocials && cat.customSocials.length > 0)
+      ? cat.customSocials
+      : (proj.customSocials || []),
+  };
+}
+
 export interface Catalog {
   id: string;
   projectId: string;

@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 import crypto from 'crypto';
-import { Catalog, Product, Project, UserAISettings, DEFAULT_CATALOG_LOGO, getCatalogLogo, hasCustomLogo } from '../types/catalog';
+import { Catalog, Product, Project, UserAISettings, DEFAULT_CATALOG_LOGO, getCatalogLogo, hasCustomLogo, mergeContactWithProjectDefaults } from '../types/catalog';
 import { INITIAL_CATALOG } from '../data/defaultCatalog';
 
 // Global connection pool singleton to prevent exhausting connections during Next.js dev hot-reload
@@ -482,11 +482,11 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
   const pool = getPool();
 
   const query = userId
-    ? `SELECT c.*, p.logo_url as project_logo_url
+    ? `SELECT c.*, p.logo_url as project_logo_url, p.default_contact as project_default_contact
        FROM catalogs c
        LEFT JOIN projects p ON c.project_id = p.id
        WHERE (c.id = ? OR c.slug = ?) AND c.user_id = ? LIMIT 1`
-    : `SELECT c.*, p.logo_url as project_logo_url
+    : `SELECT c.*, p.logo_url as project_logo_url, p.default_contact as project_default_contact
        FROM catalogs c
        LEFT JOIN projects p ON c.project_id = p.id
        WHERE c.id = ? OR c.slug = ? LIMIT 1`;
@@ -546,7 +546,14 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
     footerText: cat.footer_text || undefined,
     products,
     theme: typeof cat.theme_config === 'string' ? JSON.parse(cat.theme_config) : cat.theme_config,
-    contact: typeof cat.contact_info === 'string' ? JSON.parse(cat.contact_info) : cat.contact_info,
+    contact: mergeContactWithProjectDefaults(
+      typeof cat.contact_info === 'string' ? JSON.parse(cat.contact_info) : cat.contact_info,
+      cat.project_default_contact
+        ? (typeof cat.project_default_contact === 'string'
+            ? JSON.parse(cat.project_default_contact)
+            : cat.project_default_contact)
+        : null
+    ),
     updatedAt: new Date(cat.updated_at).toISOString(),
   };
 }
