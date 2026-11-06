@@ -8,6 +8,8 @@ export const SAMPLE_CANDLES: Record<string, Product[]> = {
       name: 'Vela Botánica Bosque Nevado',
       sku: 'NV-01',
       price: 38000,
+      originalPrice: 48000,
+      discountLabel: '20% OFF',
       currency: '$',
       description: 'Elaborada con cera de soya 100% pura y mecha de madera crepitante. Decorada a mano con ramitas de pino silvestre, anís estrellado y escarcha dorada vegetal.',
       heightCm: 12.0,
@@ -23,6 +25,7 @@ export const SAMPLE_CANDLES: Record<string, Product[]> = {
       burnTimeHours: 48,
       waxType: 'Cera de Soya & Aceites Esenciales',
       isSeasonalSpecial: true,
+      groupId: 'group-nav-1',
     },
     {
       id: 'candle-nav-2',
@@ -44,6 +47,7 @@ export const SAMPLE_CANDLES: Record<string, Product[]> = {
       burnTimeHours: 65,
       waxType: 'Cera de Soya & Palma Sostenible',
       isSeasonalSpecial: true,
+      groupId: 'group-nav-1',
     },
     {
       id: 'candle-nav-3',
@@ -64,6 +68,7 @@ export const SAMPLE_CANDLES: Record<string, Product[]> = {
       burnTimeHours: 50,
       waxType: 'Cera de Soya 100%',
       isSeasonalSpecial: false,
+      groupId: 'group-nav-2',
     },
     {
       id: 'candle-nav-4',
@@ -85,6 +90,7 @@ export const SAMPLE_CANDLES: Record<string, Product[]> = {
       burnTimeHours: 12,
       waxType: 'Cera de Abeja Natural & Soya',
       isSeasonalSpecial: true,
+      groupId: 'group-nav-2',
     },
   ],
   amor_amistad: [
@@ -413,6 +419,18 @@ export const INITIAL_CATALOG: Catalog = {
   featuredSectionTitle: 'Colección Destacada',
   regularSectionTitle: 'Velas & Aromas',
   footerText: '© 2026 GAOS Candles · Hecho con amor artesanal',
+  productGroups: [
+    {
+      id: 'group-nav-1',
+      name: 'Colección Botánica Navideña',
+      subtitle: 'Velas artesanales con cera de soya pura y notas de pino y canela',
+    },
+    {
+      id: 'group-nav-2',
+      name: 'Edición Cerámica & Regalos Especiales',
+      subtitle: 'Contenedores reutilizables y juegos festivos exclusivos',
+    },
+  ],
   products: SAMPLE_CANDLES.navidad,
   theme: SEASONAL_PRESETS.navidad.theme,
   contact: {

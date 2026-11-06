@@ -1,5 +1,6 @@
 import React from 'react';
 import { Catalog, hasCustomLogo, getBrandInitials } from '../../types/catalog';
+import { compressImageDataUrl, readFileAsDataUrl } from '../../lib/imageCompression';
 import { BookOpen, Phone, AtSign, MapPin, Upload, Globe, Sparkles, Music2, Pin, Plus, Trash2, Share2 } from 'lucide-react';
 
 interface BrandContactEditorProps {
@@ -13,36 +14,28 @@ export const BrandContactEditor: React.FC<BrandContactEditorProps> = ({
   onChange,
   onOpenAIIntro,
 }) => {
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        onChange({
-          ...catalog,
-          coverImage: event.target.result as string,
-        });
-      }
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await readFileAsDataUrl(file);
+    const coverImage = await compressImageDataUrl(dataUrl, 1600, 0.82);
+    onChange({
+      ...catalog,
+      coverImage,
+    });
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        onChange({
-          ...catalog,
-          brandLogo: event.target.result as string,
-        });
-      }
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await readFileAsDataUrl(file);
+    const brandLogo = await compressImageDataUrl(dataUrl, 600, 0.9, true);
+    onChange({
+      ...catalog,
+      brandLogo,
+    });
   };
 
   return (

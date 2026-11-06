@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Catalog, Product, Project, User as UserType, hasCustomLogo, mergeContactWithProjectDefaults } from '../types/catalog';
 import { INITIAL_CATALOG } from '../data/defaultCatalog';
 import { saveCatalogToStorage, getCatalogFromStorage } from '../lib/storage';
+import { shrinkCatalogForSave, getCatalogPayloadSize, MAX_SAVE_PAYLOAD_BYTES } from '../lib/imageCompression';
 import { HeaderNavbar } from '../components/shared/HeaderNavbar';
 import { CatalogEditor } from '../components/editor/CatalogEditor';
 import { CatalogPreview } from '../components/preview/CatalogPreview';
@@ -30,6 +31,7 @@ export default function EasyCatMainPage() {
   // Catalog state
   const [catalog, setCatalog] = useState<Catalog>(INITIAL_CATALOG);
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [lastModifiedTime, setLastModifiedTime] = useState<number | null>(null);
   const [showInactivitySaveAlert, setShowInactivitySaveAlert] = useState<boolean>(false);
@@ -270,10 +272,11 @@ export default function EasyCatMainPage() {
   };
 
   const handleSaveToDb = async () => {
-    if (!currentUser) return;
+    if (!currentUser || isSaving) return;
+    setIsSaving(true);
+    setSaveMessage('Guardando...');
     try {
-      setSaveMessage('Guardando...');
-      const catalogToSave = {
+      const baseToSave: Catalog = {
         ...catalog,
         projectId: currentProject?.id || catalog.projectId || 'default-project',
         brandName: currentProject?.name || catalog.brandName,
@@ -282,6 +285,20 @@ export default function EasyCatMainPage() {
           : (hasCustomLogo(catalog.brandLogo) ? catalog.brandLogo : undefined),
       };
 
+      // Vercel rejects request bodies > 4.5 MB, so recompress embedded images if needed
+      const catalogToSave = await shrinkCatalogForSave(baseToSave);
+      if (catalogToSave !== baseToSave) {
+        saveCatalogToStorage(catalogToSave);
+      }
+      const payloadSize = getCatalogPayloadSize(catalogToSave);
+      if (payloadSize > MAX_SAVE_PAYLOAD_BYTES) {
+        const sizeMb = (payloadSize / (1024 * 1024)).toFixed(1);
+        alert(`El catálogo pesa ${sizeMb} MB y supera el límite de 4 MB permitido para guardar.\n\nReduce la cantidad o el tamaño de las imágenes (portada y productos) e intenta de nuevo.`);
+        setSaveMessage('Catálogo demasiado pesado');
+        setIsSaved(false);
+        return;
+      }
+
       const res = await fetch('/api/catalogs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,24 +306,64 @@ export default function EasyCatMainPage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        alert(errorData.error || 'Error al guardar el catálogo en la base de datos.');
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 413) {
+          alert('El catálogo es demasiado pesado para guardarse (límite del servidor: 4.5 MB). Reduce el tamaño o la cantidad de imágenes e intenta de nuevo.\n\nSe mantuvo una copia en tu navegador.');
+          setSaveMessage('Catálogo demasiado pesado');
+          setIsSaved(false);
+          return;
+        }
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        if (res.status === 403) {
+          alert(errData.error || 'No tienes permiso para editar este catálogo.');
+          setSaveMessage('Sin permisos de edición');
+          return;
+        }
+        const errorDetail = errData.error || errData.details || `Error al guardar en la base de datos (HTTP ${res.status}).`;
+        alert(`No se pudo guardar en la base de datos:\n\n${errorDetail}\n\nSe mantuvo una copia en tu navegador.`);
         setSaveMessage('Error al guardar');
+        setIsSaved(false);
         return;
       }
 
-      setIsSaved(true);
+      const data = await res.json();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setSaveMessage(`Guardado (${timeStr})`);
       setHasUnsavedChanges(false);
       setLastModifiedTime(null);
       setShowInactivitySaveAlert(false);
-      setSaveMessage('Guardado');
-      setTimeout(() => setIsSaved(false), 3000);
+
+      if (data.catalog) {
+        setCatalog(data.catalog);
+        saveCatalogToStorage(data.catalog);
+      }
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3500);
     } catch (err) {
       console.error('Error saving catalog:', err);
-      alert('Error de conexión al guardar el catálogo.');
-      setSaveMessage('Error');
+      alert('Error de conexión al guardar el catálogo. Revisa tu conexión a internet.');
+      setSaveMessage('Error de red');
+      setIsSaved(false);
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  // Keyboard shortcut Ctrl+S / Cmd+S to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSaveToDb();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [catalog, currentProject, currentUser, isSaving]);
 
   const handleSelectProjectFromDashboard = async (proj: Project) => {
     setCurrentProject(proj);
@@ -396,6 +453,7 @@ export default function EasyCatMainPage() {
             }}
             onOpenAISettings={() => setIsAISettingsOpen(true)}
             isSaved={isSaved}
+            isSaving={isSaving}
             hasUnsavedChanges={hasUnsavedChanges}
             saveMessage={saveMessage}
           />
@@ -479,6 +537,9 @@ export default function EasyCatMainPage() {
                     setAiAssistantTab('extract');
                     setIsAIAssistantOpen(true);
                   }}
+                  onSave={handleSaveToDb}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                  isSaving={isSaving}
                 />
               </div>
             </aside>

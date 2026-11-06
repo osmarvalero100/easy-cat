@@ -117,6 +117,7 @@ export async function initDatabase(): Promise<void> {
         featured_section_title VARCHAR(255) DEFAULT 'Colección Destacada',
         regular_section_title VARCHAR(255) DEFAULT 'Velas & Aromas',
         footer_text VARCHAR(255) NULL,
+        product_groups JSON NULL,
         theme_config JSON NOT NULL,
         contact_info JSON NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -129,14 +130,30 @@ export async function initDatabase(): Promise<void> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // Ensure product_groups column exists in catalogs table if it was created before
+    try {
+      const [cols] = await pool.query<mysql.RowDataPacket[]>(
+        "SHOW COLUMNS FROM catalogs LIKE 'product_groups'"
+      );
+      if (cols.length === 0) {
+        await pool.query(
+          "ALTER TABLE catalogs ADD COLUMN product_groups JSON NULL AFTER footer_text"
+        );
+      }
+    } catch (migErr) {
+      console.warn('Could not check or alter product_groups column in catalogs:', migErr);
+    }
+
     // 5. Products table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS products (
         id VARCHAR(64) PRIMARY KEY,
         catalog_id VARCHAR(64) NOT NULL,
+        group_id VARCHAR(64) NULL,
         name VARCHAR(255) NOT NULL,
         sku VARCHAR(100) DEFAULT '',
         price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+        original_price DECIMAL(12, 2) NULL DEFAULT NULL,
         currency VARCHAR(10) NOT NULL DEFAULT '$',
         description TEXT,
         height_cm DECIMAL(5, 2) DEFAULT 0.00,
@@ -145,6 +162,7 @@ export async function initDatabase(): Promise<void> {
         burn_time_hours INT NULL,
         wax_type VARCHAR(100) DEFAULT '',
         is_seasonal_special TINYINT(1) DEFAULT 0,
+        discount_label VARCHAR(100) NULL DEFAULT NULL,
         sort_order INT DEFAULT 0,
         fragrances JSON,
         colors JSON,
@@ -152,9 +170,44 @@ export async function initDatabase(): Promise<void> {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_products_catalog (catalog_id),
+        INDEX idx_products_group (group_id),
         CONSTRAINT fk_products_catalog FOREIGN KEY (catalog_id) REFERENCES catalogs (id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Ensure group_id, original_price, and discount_label columns exist if table was created before
+    try {
+      const [cols] = await pool.query<mysql.RowDataPacket[]>(
+        "SHOW COLUMNS FROM products LIKE 'group_id'"
+      );
+      if (cols.length === 0) {
+        await pool.query("ALTER TABLE products ADD COLUMN group_id VARCHAR(64) NULL AFTER catalog_id, ADD INDEX idx_products_group (group_id)");
+      }
+    } catch (migErr) {
+      console.warn('Could not check or alter group_id column in products:', migErr);
+    }
+
+    try {
+      const [cols] = await pool.query<mysql.RowDataPacket[]>(
+        "SHOW COLUMNS FROM products LIKE 'original_price'"
+      );
+      if (cols.length === 0) {
+        await pool.query("ALTER TABLE products ADD COLUMN original_price DECIMAL(12, 2) NULL DEFAULT NULL AFTER price");
+      }
+    } catch (migErr) {
+      console.warn('Could not check or alter original_price column in products:', migErr);
+    }
+
+    try {
+      const [cols] = await pool.query<mysql.RowDataPacket[]>(
+        "SHOW COLUMNS FROM products LIKE 'discount_label'"
+      );
+      if (cols.length === 0) {
+        await pool.query("ALTER TABLE products ADD COLUMN discount_label VARCHAR(100) NULL DEFAULT NULL AFTER is_seasonal_special");
+      }
+    } catch (migErr) {
+      console.warn('Could not check or alter discount_label column in products:', migErr);
+    }
 
     // 6. User AI Settings table (BYOK - Bring Your Own Key)
     await pool.query(`
@@ -503,24 +556,31 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
     [cat.id]
   );
 
-  const products: Product[] = prodRows.map((p) => ({
-    id: p.id,
-    name: p.name,
-    sku: p.sku || undefined,
-    price: Number(p.price),
-    currency: p.currency || '$',
-    description: p.description || '',
-    heightCm: Number(p.height_cm || 0),
-    widthCm: Number(p.width_cm || 0),
-    fragrances: typeof p.fragrances === 'string' ? JSON.parse(p.fragrances) : p.fragrances || [],
-    colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
-    includes: typeof p.includes === 'string' ? JSON.parse(p.includes) : p.includes || [],
-    image: p.image || '',
-    burnTimeHours: p.burn_time_hours ? Number(p.burn_time_hours) : undefined,
-    waxType: p.wax_type || undefined,
-    isSeasonalSpecial: Boolean(p.is_seasonal_special),
-    sortOrder: Number(p.sort_order || 0),
-  }));
+  const products: Product[] = prodRows.map((p) => {
+    const price = Number(p.price);
+    const originalPrice = (p.original_price != null && Number(p.original_price) > 0) ? Number(p.original_price) : undefined;
+    return {
+      id: p.id,
+      groupId: p.group_id || undefined,
+      name: p.name,
+      sku: p.sku || undefined,
+      price,
+      originalPrice,
+      discountLabel: p.discount_label || undefined,
+      currency: p.currency || '$',
+      description: p.description || '',
+      heightCm: Number(p.height_cm || 0),
+      widthCm: Number(p.width_cm || 0),
+      fragrances: typeof p.fragrances === 'string' ? JSON.parse(p.fragrances) : p.fragrances || [],
+      colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : p.colors || [],
+      includes: typeof p.includes === 'string' ? JSON.parse(p.includes) : p.includes || [],
+      image: p.image || '',
+      burnTimeHours: p.burn_time_hours ? Number(p.burn_time_hours) : undefined,
+      waxType: p.wax_type || undefined,
+      isSeasonalSpecial: Boolean(p.is_seasonal_special),
+      sortOrder: Number(p.sort_order || 0),
+    };
+  });
 
   const effectiveLogo = (cat.brand_logo && hasCustomLogo(cat.brand_logo))
     ? cat.brand_logo
@@ -544,6 +604,9 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
     featuredSectionTitle: cat.featured_section_title || 'Colección Destacada',
     regularSectionTitle: cat.regular_section_title || 'Velas & Aromas',
     footerText: cat.footer_text || undefined,
+    productGroups: cat.product_groups
+      ? (typeof cat.product_groups === 'string' ? JSON.parse(cat.product_groups) : cat.product_groups)
+      : undefined,
     products,
     theme: typeof cat.theme_config === 'string' ? JSON.parse(cat.theme_config) : cat.theme_config,
     contact: mergeContactWithProjectDefaults(
@@ -558,7 +621,7 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
   };
 }
 
-export async function saveCatalog(catalog: Catalog, userId: number): Promise<void> {
+export async function saveCatalog(catalog: Catalog, userId: number): Promise<Catalog> {
   await initDatabase();
   const pool = getPool();
   const conn = await pool.getConnection();
@@ -609,9 +672,9 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<voi
       `INSERT INTO catalogs (
         id, project_id, user_id, slug, title, subtitle, season_tag, edition_year,
         brand_name, brand_logo, cover_image, intro_text,
-        featured_section_title, regular_section_title, footer_text,
+        featured_section_title, regular_section_title, footer_text, product_groups,
         theme_config, contact_info
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         project_id = VALUES(project_id),
         user_id = VALUES(user_id),
@@ -627,6 +690,7 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<voi
         featured_section_title = VALUES(featured_section_title),
         regular_section_title = VALUES(regular_section_title),
         footer_text = VALUES(footer_text),
+        product_groups = VALUES(product_groups),
         theme_config = VALUES(theme_config),
         contact_info = VALUES(contact_info),
         updated_at = CURRENT_TIMESTAMP`,
@@ -646,6 +710,7 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<voi
         catalog.featuredSectionTitle || 'Colección Destacada',
         catalog.regularSectionTitle || 'Velas & Aromas',
         catalog.footerText || null,
+        catalog.productGroups ? JSON.stringify(catalog.productGroups) : null,
         JSON.stringify(catalog.theme),
         JSON.stringify(catalog.contact),
       ]
@@ -654,38 +719,87 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<voi
     // 4. Synchronize products
     await conn.query('DELETE FROM products WHERE catalog_id = ?', [catalog.id]);
 
+    const savedProducts: Product[] = [];
+    const seenProductIds = new Set<string>();
+
     if (catalog.products && catalog.products.length > 0) {
-      const productValues = catalog.products.map((p, index) => [
-        p.id || `prod_${catalog.id}_${index}_${crypto.randomBytes(4).toString('hex')}`,
-        catalog.id,
-        p.name || 'Producto sin nombre',
-        p.sku || '',
-        Number(p.price) || 0,
-        p.currency || '$',
-        p.description || '',
-        Number(p.heightCm) || 0,
-        Number(p.widthCm) || 0,
-        p.image || '',
-        p.burnTimeHours ? Number(p.burnTimeHours) : null,
-        p.waxType || '',
-        p.isSeasonalSpecial ? 1 : 0,
-        index,
-        JSON.stringify(p.fragrances || []),
-        JSON.stringify(p.colors || []),
-        JSON.stringify(p.includes || []),
-      ]);
+      const productValues = catalog.products.map((p, index) => {
+        let productId = (p.id || '').trim();
+        if (!productId || seenProductIds.has(productId)) {
+          productId = `prod_${catalog.id}_${index}_${crypto.randomBytes(4).toString('hex')}`;
+        }
+        seenProductIds.add(productId);
+
+        const price = Number.isFinite(Number(p.price)) ? Number(p.price) : 0;
+        const originalPrice = (p.originalPrice != null && Number.isFinite(Number(p.originalPrice)) && Number(p.originalPrice) > price)
+          ? Number(p.originalPrice)
+          : null;
+        const discountLabel = p.discountLabel ? p.discountLabel.trim() : null;
+        const heightCm = Number.isFinite(Number(p.heightCm)) ? Number(p.heightCm) : 0;
+        const widthCm = Number.isFinite(Number(p.widthCm)) ? Number(p.widthCm) : 0;
+        const burnTimeHours = (p.burnTimeHours != null && Number.isFinite(Number(p.burnTimeHours))) ? Number(p.burnTimeHours) : null;
+        const waxType = p.waxType || '';
+        const isSeasonalSpecial = Boolean(p.isSeasonalSpecial);
+
+        savedProducts.push({
+          ...p,
+          id: productId,
+          groupId: p.groupId || undefined,
+          price,
+          originalPrice: originalPrice ?? undefined,
+          discountLabel: discountLabel ?? undefined,
+          heightCm,
+          widthCm,
+          burnTimeHours: burnTimeHours ?? undefined,
+          waxType: waxType || undefined,
+          isSeasonalSpecial,
+          sortOrder: index,
+        });
+
+        return [
+          productId,
+          catalog.id,
+          p.groupId || null,
+          p.name || 'Producto sin nombre',
+          p.sku || '',
+          price,
+          originalPrice,
+          p.currency || '$',
+          p.description || '',
+          heightCm,
+          widthCm,
+          p.image || '',
+          burnTimeHours,
+          waxType,
+          isSeasonalSpecial ? 1 : 0,
+          discountLabel,
+          index,
+          JSON.stringify(p.fragrances || []),
+          JSON.stringify(p.colors || []),
+          JSON.stringify(p.includes || []),
+        ];
+      });
 
       await conn.query(
         `INSERT INTO products (
-          id, catalog_id, name, sku, price, currency, description,
+          id, catalog_id, group_id, name, sku, price, original_price, currency, description,
           height_cm, width_cm, image, burn_time_hours, wax_type,
-          is_seasonal_special, sort_order, fragrances, colors, includes
+          is_seasonal_special, discount_label, sort_order, fragrances, colors, includes
         ) VALUES ?`,
         [productValues]
       );
     }
 
     await conn.commit();
+
+    return {
+      ...catalog,
+      projectId,
+      userId,
+      productGroups: catalog.productGroups,
+      products: savedProducts,
+      updatedAt: new Date().toISOString(),
+    };
   } catch (err) {
     await conn.rollback();
     throw err;
@@ -720,6 +834,7 @@ export async function duplicateCatalog(
     slug: cleanSlug,
     title: newTitle.trim(),
     userId,
+    productGroups: source.productGroups ? JSON.parse(JSON.stringify(source.productGroups)) : undefined,
     products: source.products.map((p, idx) => ({
       ...p,
       id: `prod_${newCatalogId}_${idx}_${crypto.randomBytes(3).toString('hex')}`,
@@ -727,8 +842,7 @@ export async function duplicateCatalog(
     updatedAt: new Date().toISOString(),
   };
 
-  await saveCatalog(duplicated, userId);
-  return duplicated;
+  return await saveCatalog(duplicated, userId);
 }
 
 export async function deleteCatalog(catalogId: string, userId: number): Promise<boolean> {

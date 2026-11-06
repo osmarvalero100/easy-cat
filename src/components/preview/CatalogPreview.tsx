@@ -4,6 +4,7 @@ import { CatalogCoverPage } from './CatalogCoverPage';
 import { CatalogProductPage } from './CatalogProductPage';
 import { CatalogBackCoverPage } from './CatalogBackCoverPage';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Layers } from 'lucide-react';
+import { getCatalogPages, normalizeProductGroups } from '../../lib/catalogGroups';
 
 interface CatalogPreviewProps {
   catalog: Catalog;
@@ -16,27 +17,25 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({
   isPrintMode = false,
   onChange,
 }) => {
-  // 2 products per page for high-luxury editorial layout
-  const productsPerPage = 2;
-  const productChunks: Product[][] = [];
+  // Editorial pages grouped by section (each grouping has its own pages and title)
+  const { pages: catalogPages, totalPages } = getCatalogPages(catalog, 2);
 
-  for (let i = 0; i < catalog.products.length; i += productsPerPage) {
-    productChunks.push(catalog.products.slice(i, i + productsPerPage));
-  }
-
-  const handleUpdateSectionTitle = (index: number, newTitle: string) => {
+  const handleUpdateGroupTitle = (groupId: string, newTitle: string) => {
     if (!onChange) return;
-    if (index === 0) {
-      onChange({
-        ...catalog,
-        featuredSectionTitle: newTitle,
-      });
-    } else {
-      onChange({
-        ...catalog,
-        regularSectionTitle: newTitle,
-      });
-    }
+    const currentGroups = normalizeProductGroups(catalog);
+    const updatedGroups = currentGroups.map((g) =>
+      g.id === groupId ? { ...g, name: newTitle } : g
+    );
+
+    const featuredTitle = updatedGroups[0]?.name || catalog.featuredSectionTitle;
+    const regularTitle = updatedGroups[1]?.name || catalog.regularSectionTitle;
+
+    onChange({
+      ...catalog,
+      productGroups: updatedGroups,
+      featuredSectionTitle: featuredTitle,
+      regularSectionTitle: regularTitle,
+    });
   };
 
   const handleUpdateFooterText = (newFooter: string) => {
@@ -47,7 +46,6 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({
     });
   };
 
-  const totalPages = 1 + productChunks.length + 1; // Cover + Product Pages + Back Cover
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [viewMode, setViewMode] = useState<'all' | 'single'>('all');
   const [zoomLevel, setZoomLevel] = useState<number>(100);
@@ -165,14 +163,14 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({
             <CatalogCoverPage catalog={catalog} isPrintMode={isPrintMode} />
           </div>
 
-          {/* Product Pages */}
-          {productChunks.map((chunk, index) => {
-            const pageNum = 2 + index;
+          {/* Product Pages Grouped by Section */}
+          {catalogPages.map((pageItem) => {
+            const pageNum = pageItem.pageNumber;
             const isHiddenInSingle = viewMode === 'single' && currentPage !== pageNum;
 
             return (
               <div
-                key={index}
+                key={`page-${pageNum}-${pageItem.group.id}-${pageItem.pageIndexInGroup}`}
                 id={`catalog-page-${pageNum}`}
                 className={`catalog-page-wrapper ${
                   isHiddenInSingle ? 'hidden print:block' : 'block'
@@ -180,17 +178,13 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({
               >
                 <CatalogProductPage
                   catalog={catalog}
-                  products={chunk}
+                  products={pageItem.products}
                   pageNumber={pageNum}
                   totalPages={totalPages}
-                  sectionTitle={
-                    index === 0
-                      ? (catalog.featuredSectionTitle || 'Colección Destacada')
-                      : (catalog.regularSectionTitle || 'Velas & Aromas')
-                  }
+                  sectionTitle={pageItem.sectionTitle}
                   onUpdateSectionTitle={
                     onChange
-                      ? (newTitle) => handleUpdateSectionTitle(index, newTitle)
+                      ? (newTitle) => handleUpdateGroupTitle(pageItem.group.id, newTitle)
                       : undefined
                   }
                   isPrintMode={isPrintMode}

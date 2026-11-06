@@ -12,6 +12,9 @@ interface CatalogEditorProps {
   onChange: (updatedCatalog: Catalog) => void;
   onOpenAIIntro?: () => void;
   onOpenAIExtract?: () => void;
+  onSave?: () => void;
+  hasUnsavedChanges?: boolean;
+  isSaving?: boolean;
 }
 
 export const CatalogEditor: React.FC<CatalogEditorProps> = ({
@@ -19,6 +22,9 @@ export const CatalogEditor: React.FC<CatalogEditorProps> = ({
   onChange,
   onOpenAIIntro,
   onOpenAIExtract,
+  onSave,
+  hasUnsavedChanges = false,
+  isSaving = false,
 }) => {
   const [activeTab, setActiveTab] = useState<'theme' | 'products' | 'brand'>('products');
 
@@ -99,6 +105,9 @@ export const CatalogEditor: React.FC<CatalogEditorProps> = ({
             onChange={handleProductsChange}
             onUpdateCatalog={onChange}
             onOpenAIExtract={onOpenAIExtract}
+            onSave={onSave}
+            hasUnsavedChanges={hasUnsavedChanges}
+            isSaving={isSaving}
           />
         )}
 

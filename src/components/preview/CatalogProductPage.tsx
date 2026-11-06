@@ -38,8 +38,13 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
   const handleWhatsAppOrder = (product: Product) => {
     if (!contact.whatsapp) return;
     const phone = contact.whatsapp.replace(/[^0-9]/g, '');
+    const hasDiscount = Boolean(product.originalPrice && product.originalPrice > product.price);
+    const priceText = hasDiscount
+      ? `${catalog.theme.currencySymbol}${product.price.toLocaleString()} (Precio anterior: ~${catalog.theme.currencySymbol}${product.originalPrice!.toLocaleString()}~, ${Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100)}% OFF)`
+      : `${catalog.theme.currencySymbol}${product.price.toLocaleString()}`;
+
     const message = encodeURIComponent(
-      `¡Hola! Vi su catálogo "${catalog.title}" y me interesa ordenar la vela: *${product.name}* (Precio: ${catalog.theme.currencySymbol}${product.price.toLocaleString()}). ¿Tienen disponibilidad?`
+      `¡Hola! Vi su catálogo "${catalog.title}" y me interesa ordenar la vela: *${product.name}* (Precio: ${priceText}). ¿Tienen disponibilidad?`
     );
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
@@ -206,9 +211,16 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
                 className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
               />
 
+              {/* Discount / Promotional Badge */}
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600 text-white shadow-md z-10">
+                  {product.discountLabel || `-${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF`}
+                </span>
+              )}
+
               {product.isSeasonalSpecial && (
                 <span
-                  className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-xs"
+                  className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-xs z-10"
                   style={{
                     backgroundColor: palette.primary,
                     color: '#FFFFFF',
@@ -228,13 +240,30 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
                 >
                   {product.name}
                 </h3>
-                <span
-                  className="font-serif text-base md:text-lg font-bold whitespace-nowrap"
-                  style={{ color: palette.accent || palette.primary }}
-                >
-                  {catalog.theme.currencySymbol}
-                  {product.price.toLocaleString()}
-                </span>
+                <div className="flex flex-col items-end shrink-0">
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span
+                      className="text-xs line-through opacity-60 font-serif leading-none mb-0.5"
+                      style={{ color: palette.textSecondary }}
+                    >
+                      {catalog.theme.currencySymbol}{product.originalPrice.toLocaleString()}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="font-serif text-base md:text-lg font-bold whitespace-nowrap"
+                      style={{ color: palette.accent || palette.primary }}
+                    >
+                      {catalog.theme.currencySymbol}
+                      {product.price.toLocaleString()}
+                    </span>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                        -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {product.sku && (

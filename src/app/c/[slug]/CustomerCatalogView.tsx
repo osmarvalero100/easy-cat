@@ -12,6 +12,7 @@ import { IncludesBadgeList } from '../../../components/preview/IncludesBadgeList
 import { PdfExportModal } from '../../../components/shared/PdfExportModal';
 import { MessageCircle, FileDown, Search, Grid, BookOpen, Clock, Globe, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { getGroupedProducts, normalizeProductGroups } from '../../../lib/catalogGroups';
 
 interface CustomerCatalogViewProps {
   initialCatalog?: Catalog | null;
@@ -27,6 +28,7 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
   const [isLoading, setIsLoading] = useState<boolean>(!initialCatalog);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string | null>(null);
   const [viewStyle, setViewStyle] = useState<'pages' | 'cards'>('pages');
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
@@ -121,8 +123,13 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
   const handleOrderWhatsApp = (product: Product) => {
     if (!catalog.contact.whatsapp) return;
     const phone = catalog.contact.whatsapp.replace(/[^0-9]/g, '');
+    const hasDiscount = Boolean(product.originalPrice && product.originalPrice > product.price);
+    const priceText = hasDiscount
+      ? `${catalog.theme.currencySymbol}${product.price.toLocaleString()} (Precio anterior: ~${catalog.theme.currencySymbol}${product.originalPrice!.toLocaleString()}~, ${Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100)}% OFF)`
+      : `${catalog.theme.currencySymbol}${product.price.toLocaleString()}`;
+
     const message = encodeURIComponent(
-      `¡Hola! Vi el catálogo "${catalog.title}" y deseo ordenar la vela: *${product.name}* (${catalog.theme.currencySymbol}${product.price.toLocaleString()}). ¿Podrían darme más información?`
+      `¡Hola! Vi el catálogo "${catalog.title}" y deseo ordenar la vela: *${product.name}* (${priceText}). ¿Podrían darme más información?`
     );
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
@@ -352,7 +359,7 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
             </p>
 
             {/* Scent & Candle Search Bar */}
-            <div className="relative max-w-md mx-auto">
+            <div className="relative max-w-md mx-auto mb-4">
               <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-stone-400" />
               <input
                 type="text"
@@ -362,117 +369,234 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
                 className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-white border border-stone-300 rounded-full shadow-2xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
               />
             </div>
+
+            {/* Group Filter Chips */}
+            {(() => {
+              const groups = normalizeProductGroups(catalog);
+              if (groups.length <= 1) return null;
+              return (
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGroupFilter(null)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      selectedGroupFilter === null
+                        ? 'bg-stone-900 text-white shadow-xs'
+                        : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-100'
+                    }`}
+                  >
+                    Todos ({filteredProducts.length})
+                  </button>
+                  {groups.map((group) => {
+                    const count = filteredProducts.filter(
+                      (p) => (p.groupId || groups[0].id) === group.id
+                    ).length;
+                    return (
+                      <button
+                        key={group.id}
+                        type="button"
+                        onClick={() => setSelectedGroupFilter(group.id)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                          selectedGroupFilter === group.id
+                            ? 'bg-emerald-800 text-white shadow-xs'
+                            : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-100'
+                        }`}
+                      >
+                        <span>{group.name}</span>
+                        <span className="opacity-70 font-mono">({count})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map((candle) => (
-              <div
-                key={candle.id}
-                className="group flex flex-col bg-white rounded-xl border border-stone-200 p-4 shadow-2xs hover:shadow-lg transition-all"
-              >
-                {/* Image */}
-                <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-stone-100 mb-3 border border-stone-100">
-                  <img
-                    src={candle.image}
-                    alt={candle.name}
-                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                  />
-                  {candle.isSeasonalSpecial && (
-                    <span
-                      className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-xs"
-                      style={{ backgroundColor: catalog.theme.palette.primary }}
-                    >
-                      Edición Especial
-                    </span>
-                  )}
+          {/* Grouped Cards Sections */}
+          {(() => {
+            const groupedList = getGroupedProducts(catalog);
+            const filteredGrouped = selectedGroupFilter
+              ? groupedList.filter((item) => item.group.id === selectedGroupFilter)
+              : groupedList;
+
+            const totalMatches = filteredGrouped.reduce(
+              (acc, item) =>
+                acc + item.products.filter((p) => filteredProducts.some((fp) => fp.id === p.id)).length,
+              0
+            );
+
+            if (totalMatches === 0) {
+              return (
+                <div className="text-center py-12 text-stone-500">
+                  <p className="text-sm">No se encontraron velas que coincidan con la búsqueda.</p>
                 </div>
+              );
+            }
 
-                {/* Info */}
-                <div className="flex flex-col gap-1 mb-2">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h3
-                      className="font-serif text-base font-semibold leading-tight"
-                      style={{ color: catalog.theme.palette.primary }}
-                    >
-                      {candle.name}
-                    </h3>
-                    <span
-                      className="font-serif text-base font-bold"
-                      style={{ color: catalog.theme.palette.accent }}
-                    >
-                      {catalog.theme.currencySymbol}
-                      {candle.price.toLocaleString()}
-                    </span>
-                  </div>
-                  {candle.sku && (
-                    <span className="text-[10px] font-mono uppercase text-stone-400">
-                      Ref: {candle.sku}
-                    </span>
-                  )}
-                </div>
+            return (
+              <div className="space-y-12">
+                {filteredGrouped.map((item) => {
+                  const prods = item.products.filter((p) =>
+                    filteredProducts.some((fp) => fp.id === p.id)
+                  );
+                  if (prods.length === 0) return null;
 
-                <p className="text-xs text-stone-600 leading-relaxed mb-3 line-clamp-3">
-                  {candle.description}
-                </p>
+                  return (
+                    <section key={item.group.id} className="space-y-4">
+                      {/* Section Title & Subtitle */}
+                      <div className="pb-2.5 border-b border-stone-300/70 flex flex-wrap items-baseline justify-between gap-2">
+                        <div>
+                          <h3
+                            className="font-serif text-xl sm:text-2xl font-normal uppercase tracking-wide"
+                            style={{ color: catalog.theme.palette.primary }}
+                          >
+                            {item.group.name}
+                          </h3>
+                          {item.group.subtitle && (
+                            <p className="text-xs text-stone-600 mt-0.5">
+                              {item.group.subtitle}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-mono text-stone-500">
+                          {prods.length} {prods.length === 1 ? 'vela' : 'velas'}
+                        </span>
+                      </div>
 
-                {/* Visual Dimension Indicator */}
-                <div className="mb-3">
-                  <VisualDimensionIndicator
-                    heightCm={candle.heightCm}
-                    widthCm={candle.widthCm}
-                    color={catalog.theme.palette.primary}
-                  />
-                </div>
+                      {/* Cards Grid for this Section */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {prods.map((candle) => (
+                          <div
+                            key={candle.id}
+                            className="group flex flex-col bg-white rounded-xl border border-stone-200 p-4 shadow-2xs hover:shadow-lg transition-all"
+                          >
+                            {/* Image */}
+                            <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-stone-100 mb-3 border border-stone-100">
+                              <img
+                                src={candle.image}
+                                alt={candle.name}
+                                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                              />
+                              {candle.originalPrice && candle.originalPrice > candle.price && (
+                                <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600 text-white shadow-md z-10">
+                                  {candle.discountLabel || `-${Math.round(((candle.originalPrice - candle.price) / candle.originalPrice) * 100)}% OFF`}
+                                </span>
+                              )}
+                              {candle.isSeasonalSpecial && (
+                                <span
+                                  className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-xs z-10"
+                                  style={{ backgroundColor: catalog.theme.palette.primary }}
+                                >
+                                  Edición Especial
+                                </span>
+                              )}
+                            </div>
 
-                {/* Fragrances */}
-                {candle.fragrances && candle.fragrances.length > 0 && (
-                  <div className="mb-2.5">
-                    <FragranceBadgeList
-                      fragrances={candle.fragrances}
-                      color={catalog.theme.palette.primary}
-                    />
-                  </div>
-                )}
+                            {/* Info */}
+                            <div className="flex flex-col gap-1 mb-2">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <h4
+                                  className="font-serif text-base font-semibold leading-tight"
+                                  style={{ color: catalog.theme.palette.primary }}
+                                >
+                                  {candle.name}
+                                </h4>
+                                <div className="flex flex-col items-end shrink-0">
+                                  {candle.originalPrice && candle.originalPrice > candle.price && (
+                                    <span className="text-xs line-through text-stone-400 font-serif leading-none mb-0.5">
+                                      {catalog.theme.currencySymbol}{candle.originalPrice.toLocaleString()}
+                                    </span>
+                                  )}
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className="font-serif text-base font-bold"
+                                      style={{ color: catalog.theme.palette.accent }}
+                                    >
+                                      {catalog.theme.currencySymbol}
+                                      {candle.price.toLocaleString()}
+                                    </span>
+                                    {candle.originalPrice && candle.originalPrice > candle.price && (
+                                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                                        -{Math.round(((candle.originalPrice - candle.price) / candle.originalPrice) * 100)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              {candle.sku && (
+                                <span className="text-[10px] font-mono uppercase text-stone-400">
+                                  Ref: {candle.sku}
+                                </span>
+                              )}
+                            </div>
 
-                {/* Colors */}
-                {candle.colors && candle.colors.length > 0 && (
-                  <div className="mb-2.5">
-                    <ColorSwatchList colors={candle.colors} />
-                  </div>
-                )}
+                            <p className="text-xs text-stone-600 leading-relaxed mb-3 line-clamp-3">
+                              {candle.description}
+                            </p>
 
-                {/* Includes */}
-                {(catalog.theme.showIncludes ?? true) && candle.includes && candle.includes.length > 0 && (
-                  <div className="mb-3">
-                    <IncludesBadgeList
-                      includes={candle.includes}
-                      color={catalog.theme.palette.primary}
-                    />
-                  </div>
-                )}
+                            {/* Visual Dimension Indicator */}
+                            <div className="mb-3">
+                              <VisualDimensionIndicator
+                                heightCm={candle.heightCm}
+                                widthCm={candle.widthCm}
+                                color={catalog.theme.palette.primary}
+                              />
+                            </div>
 
-                {/* Burn time */}
-                {candle.burnTimeHours && (
-                  <div className="text-[11px] text-stone-500 flex items-center gap-1 mb-4 pt-1 border-t border-stone-100">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>~{candle.burnTimeHours} horas de duración</span>
-                  </div>
-                )}
+                            {/* Fragrances */}
+                            {candle.fragrances && candle.fragrances.length > 0 && (
+                              <div className="mb-2.5">
+                                <FragranceBadgeList
+                                  fragrances={candle.fragrances}
+                                  color={catalog.theme.palette.primary}
+                                />
+                              </div>
+                            )}
 
-                {/* Order via WhatsApp */}
-                <button
-                  type="button"
-                  onClick={() => handleOrderWhatsApp(candle)}
-                  className="mt-auto w-full py-2 px-3 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-2xs hover:opacity-90 active:scale-98 transition-all"
-                  style={{ backgroundColor: '#25D366' }}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Pedir por WhatsApp</span>
-                </button>
+                            {/* Colors */}
+                            {candle.colors && candle.colors.length > 0 && (
+                              <div className="mb-2.5">
+                                <ColorSwatchList colors={candle.colors} />
+                              </div>
+                            )}
+
+                            {/* Includes */}
+                            {(catalog.theme.showIncludes ?? true) && candle.includes && candle.includes.length > 0 && (
+                              <div className="mb-3">
+                                <IncludesBadgeList
+                                  includes={candle.includes}
+                                  color={catalog.theme.palette.primary}
+                                />
+                              </div>
+                            )}
+
+                            {/* Burn time */}
+                            {candle.burnTimeHours && (
+                              <div className="text-[11px] text-stone-500 flex items-center gap-1 mb-4 pt-1 border-t border-stone-100">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>~{candle.burnTimeHours} horas de duración</span>
+                              </div>
+                            )}
+
+                            {/* Order via WhatsApp */}
+                            <button
+                              type="button"
+                              onClick={() => handleOrderWhatsApp(candle)}
+                              className="mt-auto w-full py-2 px-3 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-2xs hover:opacity-90 active:scale-98 transition-all"
+                              style={{ backgroundColor: '#25D366' }}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              <span>Pedir por WhatsApp</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </main>
       )}
 

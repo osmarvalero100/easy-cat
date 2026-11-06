@@ -1,17 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Product, CandleColor } from '../../types/catalog';
+import { Product, CandleColor, ProductGroup } from '../../types/catalog';
 import { VisualDimensionIndicator } from '../preview/VisualDimensionIndicator';
-import { X, Upload, Plus, Trash2, Sparkles, Image as ImageIcon, PackageCheck, Check, Loader2 } from 'lucide-react';
+import {
+  X,
+  Upload,
+  Plus,
+  Trash2,
+  Sparkles,
+  Image as ImageIcon,
+  PackageCheck,
+  Check,
+  Loader2,
+  Layers,
+  Tag,
+  Percent,
+  BadgePercent,
+  Globe,
+} from 'lucide-react';
+
+export interface DiscountScopeAction {
+  scope: 'single' | 'group' | 'catalog';
+  percent: number;
+  fixedDiscount?: number;
+  discountType: 'percentage' | 'fixedPrice';
+  targetGroupId?: string;
+  label?: string;
+  removeDiscount?: boolean;
+}
 
 interface ProductFormModalProps {
   product?: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: Product) => void;
+  onSave: (product: Product, discountAction?: DiscountScopeAction) => void;
   currencySymbol?: string;
   suggestedFragrances?: string[];
   suggestedIncludes?: string[];
+  groups?: ProductGroup[];
+  defaultGroupId?: string;
+  allProducts?: Product[];
 }
 
 const DEFAULT_SUGGESTED_INCLUDES = [
@@ -42,6 +70,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   currencySymbol = '$',
   suggestedFragrances = [],
   suggestedIncludes = [],
+  groups = [],
+  defaultGroupId,
+  allProducts = [],
 }) => {
   const [mounted, setMounted] = useState(false);
 
@@ -49,11 +80,34 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     setMounted(true);
   }, []);
 
+  const generateUniqueId = () => `candle-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+  const resolvedInitialGroupId =
+    product?.groupId ||
+    defaultGroupId ||
+    (groups && groups.length > 0 ? groups[0].id : undefined);
+
+  // Discount state
+  const hasInitialDiscount = Boolean(product?.originalPrice && product.originalPrice > product.price);
+  const initialRegularPrice = hasInitialDiscount ? (product?.originalPrice || 35000) : (product?.price || 35000);
+  const initialDiscountedPrice = hasInitialDiscount ? product!.price : Math.round(initialRegularPrice * 0.8);
+  const initialDiscountPercent = hasInitialDiscount
+    ? Math.max(1, Math.min(99, Math.round(((initialRegularPrice - product!.price) / initialRegularPrice) * 100)))
+    : 20;
+
+  const [regularPrice, setRegularPrice] = useState<number>(initialRegularPrice);
+  const [hasDiscount, setHasDiscount] = useState<boolean>(hasInitialDiscount);
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixedPrice'>('percentage');
+  const [discountPercent, setDiscountPercent] = useState<number>(initialDiscountPercent);
+  const [discountedPrice, setDiscountedPrice] = useState<number>(initialDiscountedPrice);
+  const [discountLabel, setDiscountLabel] = useState<string>(product?.discountLabel || '');
+  const [discountScope, setDiscountScope] = useState<'single' | 'group' | 'catalog'>('single');
+
   const [formData, setFormData] = useState<Product>(
     product
-      ? { ...product, includes: product.includes || [] }
+      ? { ...product, includes: product.includes || [], groupId: resolvedInitialGroupId }
       : {
-          id: `candle-${Date.now()}`,
+          id: generateUniqueId(),
           name: '',
           sku: `VEL-${Math.floor(100 + Math.random() * 900)}`,
           price: 35000,
@@ -71,18 +125,36 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           burnTimeHours: 40,
           waxType: 'Cera de Soya 100% Ecológica',
           isSeasonalSpecial: true,
+          groupId: resolvedInitialGroupId,
         }
   );
 
   useEffect(() => {
+    const hasInitDiscount = Boolean(product?.originalPrice && product.originalPrice > product.price);
+    const regPrice = hasInitDiscount ? (product?.originalPrice || 35000) : (product ? product.price : 35000);
+    const discPrice = hasInitDiscount ? product!.price : Math.round(regPrice * 0.8);
+    const discPct = hasInitDiscount
+      ? Math.max(1, Math.min(99, Math.round(((regPrice - product!.price) / regPrice) * 100)))
+      : 20;
+
+    setRegularPrice(regPrice);
+    setHasDiscount(hasInitDiscount);
+    setDiscountType('percentage');
+    setDiscountPercent(discPct);
+    setDiscountedPrice(discPrice);
+    setDiscountLabel(product?.discountLabel || '');
+    setDiscountScope('single');
+
     if (product) {
       setFormData({
         ...product,
+        price: hasInitDiscount ? product.price : regPrice,
         includes: product.includes || [],
+        groupId: product.groupId || defaultGroupId || (groups && groups.length > 0 ? groups[0].id : undefined),
       });
     } else {
       setFormData({
-        id: `candle-${Date.now()}`,
+        id: generateUniqueId(),
         name: '',
         sku: `VEL-${Math.floor(100 + Math.random() * 900)}`,
         price: 35000,
@@ -100,9 +172,46 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         burnTimeHours: 40,
         waxType: 'Cera de Soya 100% Ecológica',
         isSeasonalSpecial: true,
+        groupId: defaultGroupId || (groups && groups.length > 0 ? groups[0].id : undefined),
       });
     }
-  }, [product, isOpen, currencySymbol]);
+  }, [product, isOpen, currencySymbol, defaultGroupId, groups]);
+
+  const handleRegularPriceChange = (val: number) => {
+    const safeVal = Math.max(0, val);
+    setRegularPrice(safeVal);
+    if (hasDiscount) {
+      if (discountType === 'percentage') {
+        setDiscountedPrice(Math.max(0, Math.round(safeVal * (1 - discountPercent / 100))));
+      } else {
+        if (discountedPrice >= safeVal) {
+          setDiscountedPrice(Math.max(0, Math.round(safeVal * 0.8)));
+        }
+      }
+    }
+  };
+
+  const handleToggleDiscount = (enabled: boolean) => {
+    setHasDiscount(enabled);
+    if (enabled) {
+      setDiscountedPrice(Math.max(0, Math.round(regularPrice * (1 - discountPercent / 100))));
+    }
+  };
+
+  const handleDiscountPercentChange = (pct: number) => {
+    const safePct = Math.max(1, Math.min(99, pct));
+    setDiscountPercent(safePct);
+    setDiscountedPrice(Math.max(0, Math.round(regularPrice * (1 - safePct / 100))));
+  };
+
+  const handleDiscountedPriceChange = (val: number) => {
+    const safeVal = Math.max(0, val);
+    setDiscountedPrice(safeVal);
+    if (regularPrice > 0 && safeVal < regularPrice) {
+      const calcPct = Math.round(((regularPrice - safeVal) / regularPrice) * 100);
+      setDiscountPercent(Math.max(1, Math.min(99, calcPct)));
+    }
+  };
 
   const [newFragrance, setNewFragrance] = useState('');
   const [newColorName, setNewColorName] = useState('');
@@ -155,6 +264,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setIsGeneratingAI(false);
     }
   };
+
   const [showGallery, setShowGallery] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,12 +273,50 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
     const reader = new FileReader();
     reader.onload = (uploadEvent) => {
-      if (uploadEvent.target?.result) {
+      const result = uploadEvent.target?.result as string;
+      if (!result) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setFormData((prev) => ({
+            ...prev,
+            image: compressedDataUrl,
+          }));
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            image: result,
+          }));
+        }
+      };
+      img.onerror = () => {
         setFormData((prev) => ({
           ...prev,
-          image: uploadEvent.target!.result as string,
+          image: result,
         }));
-      }
+      };
+      img.src = result;
     };
     reader.readAsDataURL(file);
   };
@@ -231,9 +379,43 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
-    onSave(formData);
+
+    const finalSellingPrice = hasDiscount ? Math.max(0, discountedPrice) : Math.max(0, regularPrice);
+    const finalOriginalPrice = hasDiscount && regularPrice > discountedPrice ? Math.max(0, regularPrice) : undefined;
+    const finalDiscountLabel = hasDiscount && discountLabel.trim() ? discountLabel.trim() : undefined;
+
+    const sanitizedProduct: Product = {
+      ...formData,
+      name: formData.name.trim(),
+      sku: (formData.sku || '').trim(),
+      price: finalSellingPrice,
+      originalPrice: finalOriginalPrice,
+      discountLabel: finalDiscountLabel,
+      heightCm: Number.isFinite(Number(formData.heightCm)) ? Math.max(0, Number(formData.heightCm)) : 0,
+      widthCm: Number.isFinite(Number(formData.widthCm)) ? Math.max(0, Number(formData.widthCm)) : 0,
+      burnTimeHours: (formData.burnTimeHours != null && Number.isFinite(Number(formData.burnTimeHours))) ? Math.max(0, Number(formData.burnTimeHours)) : undefined,
+      fragrances: Array.isArray(formData.fragrances) ? formData.fragrances : [],
+      colors: Array.isArray(formData.colors) ? formData.colors : [],
+      includes: Array.isArray(formData.includes) ? formData.includes : [],
+    };
+
+    onSave(sanitizedProduct, {
+      scope: discountScope,
+      percent: hasDiscount ? discountPercent : 0,
+      fixedDiscount: hasDiscount ? Math.max(0, regularPrice - discountedPrice) : 0,
+      discountType,
+      targetGroupId: sanitizedProduct.groupId,
+      label: finalDiscountLabel,
+      removeDiscount: !hasDiscount,
+    });
     onClose();
   };
+
+  const currentGroupId = formData.groupId || groups[0]?.id;
+  const currentGroup = groups.find((g) => g.id === currentGroupId);
+  const currentGroupName = currentGroup?.name || 'Grupo actual';
+  const groupProductsCount = (allProducts || []).filter((p) => (p.groupId || groups[0]?.id) === currentGroupId).length;
+  const totalProductsCount = (allProducts || []).length;
 
   if (!isOpen || !mounted) return null;
 
@@ -249,8 +431,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <h2 className="text-lg sm:text-xl font-bold font-serif text-stone-900">
               {product ? 'Editar Vela' : 'Nueva Vela Artesanal'}
             </h2>
-            <p className="text-xs text-stone-500 mt-1">
-              Configura nombre, medidas visuales, precio, fragancias, colores y qué incluye.
+            <p className="text-xs text-stone-500 mt-0.5">
+              Configura nombre, precio, descuentos especiales, silueta visual, fragancias y colores.
             </p>
           </div>
           <button
@@ -263,7 +445,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 sm:py-7 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 space-y-6">
           {/* Basic Info: Name, SKU, Price */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-6">
@@ -294,20 +476,416 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
 
             <div className="md:col-span-3">
-              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-                Precio ({currencySymbol}) *
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1 flex items-center justify-between">
+                <span>Precio Base ({currencySymbol}) *</span>
+                {hasDiscount && (
+                  <span className="text-[10px] text-rose-600 font-semibold lowercase">
+                    (tachado)
+                  </span>
+                )}
               </label>
               <input
                 type="number"
                 required
                 min="0"
                 step="500"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                value={regularPrice}
+                onChange={(e) => handleRegularPriceChange(Number(e.target.value))}
                 className="w-full px-3 py-2 text-sm font-semibold border rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
               />
             </div>
           </div>
+
+          {/* ============================================================== */}
+          {/* SECTION: DESCUENTOS ESPECIALES & OFERTAS (PRECIO TACHADO)     */}
+          {/* ============================================================== */}
+          <div className={`p-4 rounded-xl border transition-all duration-200 ${
+            hasDiscount
+              ? 'bg-gradient-to-br from-rose-50/70 via-amber-50/30 to-stone-50 border-rose-300 shadow-xs'
+              : 'bg-stone-50/70 border-stone-200'
+          }`}>
+            {/* Section Header with Toggle */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-stone-200/80">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-1.5 rounded-lg ${hasDiscount ? 'bg-rose-600 text-white shadow-xs' : 'bg-stone-200 text-stone-600'}`}>
+                  <BadgePercent className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-stone-900">
+                      Descuento Especial & Precio Anterior Tachado
+                    </span>
+                    {hasDiscount && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white shadow-2xs">
+                        Activo
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-stone-500">
+                    Muestra el precio anterior tachado ({currencySymbol}{regularPrice.toLocaleString()}) para resaltar la rebaja especial.
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hasDiscount}
+                  onChange={(e) => handleToggleDiscount(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600 shadow-inner"></div>
+                <span className="ml-2 text-xs font-bold text-stone-700">
+                  {hasDiscount ? 'Descuento Activado' : 'Activar Descuento'}
+                </span>
+              </label>
+            </div>
+
+            {/* Discount Configuration Body (Expanded when active) */}
+            {hasDiscount && (
+              <div className="pt-3 space-y-4 animate-in fade-in duration-200">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                  {/* Left Column: Mode, Inputs & Chips */}
+                  <div className="md:col-span-7 space-y-3">
+                    {/* Mode Selector */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1">
+                        Método de Descuento
+                      </label>
+                      <div className="flex items-center bg-stone-200/70 p-0.5 rounded-lg text-xs font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDiscountType('percentage');
+                            setDiscountedPrice(Math.max(0, Math.round(regularPrice * (1 - discountPercent / 100))));
+                          }}
+                          className={`flex-1 py-1.5 px-3 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            discountType === 'percentage'
+                              ? 'bg-white text-stone-900 shadow-2xs font-bold'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          <Percent className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Porcentaje (%)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDiscountType('fixedPrice')}
+                          className={`flex-1 py-1.5 px-3 rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                            discountType === 'fixedPrice'
+                              ? 'bg-white text-stone-900 shadow-2xs font-bold'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          <Tag className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>Precio Final Fijo ({currencySymbol})</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* If Percentage */}
+                    {discountType === 'percentage' ? (
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600">
+                          Porcentaje de Descuento
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <input
+                              type="number"
+                              min="1"
+                              max="99"
+                              value={discountPercent}
+                              onChange={(e) => handleDiscountPercentChange(Number(e.target.value))}
+                              className="w-full px-3 py-2 text-sm font-bold border rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none bg-white pr-8 text-rose-700"
+                            />
+                            <span className="absolute right-3 top-2.5 text-xs font-bold text-stone-400 font-mono">%</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[10, 15, 20, 25, 30, 50].map((pct) => (
+                              <button
+                                key={pct}
+                                type="button"
+                                onClick={() => handleDiscountPercentChange(pct)}
+                                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  discountPercent === pct
+                                    ? 'bg-rose-600 text-white shadow-2xs scale-105'
+                                    : 'bg-white hover:bg-stone-100 text-stone-700 border border-stone-200'
+                                }`}
+                              >
+                                {pct}%
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* If Fixed Discounted Price */
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600">
+                          Nuevo Precio de Venta con Descuento ({currencySymbol})
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="500"
+                          value={discountedPrice}
+                          onChange={(e) => handleDiscountedPriceChange(Number(e.target.value))}
+                          className="w-full px-3 py-2 text-sm font-bold border rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none bg-white text-emerald-800"
+                        />
+                        <p className="text-[10px] text-stone-500">
+                          El precio regular ({currencySymbol}{regularPrice.toLocaleString()}) aparecerá tachado en el catálogo.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Promotional Tag / Badge */}
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1">
+                        Insignia / Etiqueta Promocional (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={discountLabel}
+                        onChange={(e) => setDiscountLabel(e.target.value)}
+                        placeholder={`Ej. -${discountPercent}% OFF, OFERTA ESPECIAL, LIQUIDACIÓN`}
+                        className="w-full px-3 py-1.5 text-xs border rounded-lg focus:ring-1 focus:ring-rose-500 focus:outline-none bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column: Live Strikethrough Preview Card */}
+                  <div className="md:col-span-5 bg-white p-3.5 rounded-xl border border-rose-200/90 shadow-2xs flex flex-col justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block mb-2">
+                      Vista Previa de Precios en el Catálogo
+                    </span>
+
+                    <div className="p-3 bg-stone-50 rounded-lg border border-dashed border-stone-200 text-center space-y-1.5">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider bg-rose-600 text-white uppercase shadow-xs mb-1">
+                        {discountLabel.trim() || `-${discountPercent}% OFF`}
+                      </span>
+
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="text-xs line-through text-stone-400 font-serif">
+                          Antes: {currencySymbol}{regularPrice.toLocaleString()}
+                        </span>
+                        <span className="text-lg font-serif font-bold text-stone-900">
+                          Ahora: <span className="text-rose-700">{currencySymbol}{discountedPrice.toLocaleString()}</span>
+                        </span>
+                      </div>
+
+                      <div className="pt-1.5 border-t border-stone-200 text-[11px] font-medium text-emerald-700">
+                        Ahorro cliente: {currencySymbol}{(Math.max(0, regularPrice - discountedPrice)).toLocaleString()} ({discountPercent}%)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scope Selector */}
+                <div className="pt-3 border-t border-stone-200/80 space-y-2">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-stone-800 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-stone-600" />
+                      <span>Ámbito de Aplicación (¿A qué productos se aplica?)</span>
+                    </span>
+                    <p className="text-[11px] text-stone-500">
+                      Elige si este descuento especial se aplica solo a esta vela, a todas las de este grupo o a todo el catálogo.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Option 1: Solo este producto */}
+                    <button
+                      type="button"
+                      onClick={() => setDiscountScope('single')}
+                      className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        discountScope === 'single'
+                          ? 'bg-white border-rose-500 ring-2 ring-rose-500/30 shadow-xs'
+                          : 'bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="p-1.5 rounded-lg bg-stone-100 text-stone-700">
+                          <Tag className="w-3.5 h-3.5" />
+                        </span>
+                        <input
+                          type="radio"
+                          name="discountScope"
+                          checked={discountScope === 'single'}
+                          onChange={() => setDiscountScope('single')}
+                          className="text-rose-600 focus:ring-rose-500"
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-stone-900 block">Solo este producto</span>
+                      <span className="text-[10px] text-stone-500 leading-tight mt-0.5">
+                        Aplica únicamente a esta vela
+                      </span>
+                    </button>
+
+                    {/* Option 2: A todo el grupo actual */}
+                    <button
+                      type="button"
+                      onClick={() => setDiscountScope('group')}
+                      className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        discountScope === 'group'
+                          ? 'bg-white border-rose-500 ring-2 ring-rose-500/30 shadow-xs'
+                          : 'bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+                          <Layers className="w-3.5 h-3.5" />
+                        </span>
+                        <input
+                          type="radio"
+                          name="discountScope"
+                          checked={discountScope === 'group'}
+                          onChange={() => setDiscountScope('group')}
+                          className="text-rose-600 focus:ring-rose-500"
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-stone-900 block truncate" title={currentGroupName}>
+                        A todo este grupo
+                      </span>
+                      <span className="text-[10px] text-stone-500 leading-tight mt-0.5 truncate">
+                        {currentGroupName} ({groupProductsCount} {groupProductsCount === 1 ? 'vela' : 'velas'})
+                      </span>
+                    </button>
+
+                    {/* Option 3: A todo el catálogo */}
+                    <button
+                      type="button"
+                      onClick={() => setDiscountScope('catalog')}
+                      className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        discountScope === 'catalog'
+                          ? 'bg-white border-rose-500 ring-2 ring-rose-500/30 shadow-xs'
+                          : 'bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="p-1.5 rounded-lg bg-amber-100 text-amber-800">
+                          <Globe className="w-3.5 h-3.5" />
+                        </span>
+                        <input
+                          type="radio"
+                          name="discountScope"
+                          checked={discountScope === 'catalog'}
+                          onChange={() => setDiscountScope('catalog')}
+                          className="text-rose-600 focus:ring-rose-500"
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-stone-900 block">Todo el catálogo</span>
+                      <span className="text-[10px] text-stone-500 leading-tight mt-0.5">
+                        Todas las páginas ({totalProductsCount} velas)
+                      </span>
+                    </button>
+                  </div>
+
+                  {discountScope !== 'single' && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-900 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>
+                        {discountScope === 'group'
+                          ? `Al guardar, el ${discountPercent}% de descuento se aplicará a todas las ${groupProductsCount} velas de "${currentGroupName}".`
+                          : `Al guardar, el ${discountPercent}% de descuento se aplicará a todas las ${totalProductsCount} velas del catálogo completo.`
+                        }
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* If discount is turned OFF, but user wants to remove discounts from the whole group or catalog */}
+            {!hasDiscount && (
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-stone-500 text-[11px]">
+                  Sin descuento activo en esta vela.
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`¿Deseas remover los descuentos de todas las velas en "${currentGroupName}"?`)) {
+                        onSave(
+                          {
+                            ...formData,
+                            price: regularPrice,
+                            originalPrice: undefined,
+                            discountLabel: undefined,
+                          },
+                          {
+                            scope: 'group',
+                            percent: 0,
+                            targetGroupId: currentGroupId,
+                            discountType: 'percentage',
+                            removeDiscount: true,
+                          }
+                        );
+                        onClose();
+                      }
+                    }}
+                    className="text-[11px] text-stone-600 hover:text-stone-900 underline font-medium cursor-pointer"
+                  >
+                    Quitar descuentos a este grupo
+                  </button>
+                  <span className="text-stone-300">·</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('¿Deseas remover los descuentos de todo el catálogo completo?')) {
+                        onSave(
+                          {
+                            ...formData,
+                            price: regularPrice,
+                            originalPrice: undefined,
+                            discountLabel: undefined,
+                          },
+                          {
+                            scope: 'catalog',
+                            percent: 0,
+                            discountType: 'percentage',
+                            removeDiscount: true,
+                          }
+                        );
+                        onClose();
+                      }
+                    }}
+                    className="text-[11px] text-stone-600 hover:text-stone-900 underline font-medium cursor-pointer"
+                  >
+                    Quitar a todo el catálogo
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Group / Page Association */}
+          {groups && groups.length > 0 && (
+            <div className="p-3.5 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Agrupación / Título de Página *</span>
+                </label>
+                <span className="text-[10px] text-emerald-700 font-medium">
+                  Determina en qué página A4 aparecerá esta vela
+                </span>
+              </div>
+              <select
+                value={formData.groupId || groups[0]?.id || ''}
+                onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+                className="w-full px-3 py-2 text-sm bg-white border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none font-medium text-stone-800 shadow-2xs"
+              >
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} {g.subtitle ? `· ${g.subtitle}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Description */}
           <div>
@@ -392,7 +970,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </div>
 
               <div className="md:col-span-4 flex justify-center bg-white p-2 rounded-lg border border-stone-200">
-                {/* Live Visual Dimension Preview */}
                 <VisualDimensionIndicator
                   heightCm={formData.heightCm}
                   widthCm={formData.widthCm}
@@ -402,108 +979,33 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             </div>
           </div>
 
-          {/* Image Selection & Upload */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
-                Fotografía de la Vela
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowGallery(!showGallery)}
-                className="text-xs text-emerald-700 hover:text-emerald-800 font-medium flex items-center gap-1"
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-                {showGallery ? 'Ocultar Galería de Muestra' : 'Elegir de Galería de Muestra'}
-              </button>
-            </div>
-
-            {/* Gallery Picker */}
-            {showGallery && (
-              <div className="p-3 mb-3 bg-stone-100 rounded-lg border border-stone-200">
-                <p className="text-xs text-stone-600 mb-2 font-medium">
-                  Selecciona una imagen de estudio profesional para tu vela:
-                </p>
-                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                  {SAMPLE_GALLERY_IMAGES.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, image: img.url });
-                        setShowGallery(false);
-                      }}
-                      className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${
-                        formData.image === img.url
-                          ? 'border-emerald-600 ring-2 ring-emerald-500'
-                          : 'border-transparent hover:opacity-80'
-                      }`}
-                      title={img.label}
-                    >
-                      <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24 rounded-lg overflow-hidden border bg-stone-100 flex-shrink-0">
-                <img
-                  src={formData.image || SAMPLE_GALLERY_IMAGES[0].url}
-                  alt="Vista previa"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <div className="flex-1 space-y-2">
-                <label className="inline-flex items-center gap-2 px-3 py-2 border border-stone-300 rounded-lg text-xs font-medium cursor-pointer hover:bg-stone-50 shadow-2xs">
-                  <Upload className="w-4 h-4 text-stone-500" />
-                  <span>Subir Imagen de tu Vela (JPG, PNG, WebP)</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-[11px] text-stone-500">
-                  O puedes pegar una URL de imagen directa en el campo o usar las fotos de muestra.
-                </p>
-                <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://ejemplo.com/mivela.jpg"
-                  className="w-full px-3 py-1.5 text-xs border rounded-md focus:ring-1 focus:ring-emerald-600 focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Fragrances Tag Manager */}
+          {/* Fragrances Tag Input */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-              Fragancias y Notas Olfativas
+              Notas Aromáticas / Fragancias
             </label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2 p-2 bg-stone-50 border rounded-lg min-h-[42px]">
               {formData.fragrances.map((frag, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-900 border border-emerald-200"
                 >
                   {frag}
                   <button
                     type="button"
                     onClick={() => handleRemoveFragrance(idx)}
-                    className="text-emerald-600 hover:text-emerald-900"
+                    className="hover:text-red-600"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               ))}
+              {formData.fragrances.length === 0 && (
+                <span className="text-xs text-stone-400 italic">Sin fragancias agregadas</span>
+              )}
             </div>
 
+            {/* Input to add new fragrance */}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -515,76 +1017,85 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     handleAddFragrance();
                   }
                 }}
-                placeholder="Agregar fragancia (ej. Canela Bourbon, Vainilla Francesa...)"
+                placeholder="Escribe un aroma y presiona Enter (ej. Pino Silvestre, Canela)..."
                 className="flex-1 px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => handleAddFragrance()}
-                className="px-3 py-1.5 bg-stone-800 text-white rounded-lg text-xs font-medium hover:bg-black transition-colors"
+                className="px-3 py-1.5 bg-stone-800 text-white rounded-lg text-xs font-medium hover:bg-black transition-colors flex items-center gap-1"
               >
-                Agregar
+                <Plus className="w-3.5 h-3.5" /> Agregar
               </button>
             </div>
 
-            {/* Quick Suggestions */}
+            {/* Quick Suggestions for Season */}
             {suggestedFragrances.length > 0 && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] text-stone-400">Sugerencias:</span>
-                {suggestedFragrances.map((sug, idx) => (
+                <span className="text-[10px] text-stone-400">Sugerencias de temporada:</span>
+                {suggestedFragrances.map((frag, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => handleAddFragrance(sug)}
-                    className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600"
+                    onClick={() => handleAddFragrance(frag)}
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 transition-colors"
                   >
-                    + {sug}
+                    + {frag}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Color Variations Manager */}
+          {/* Colors List */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
-              Colores Disponibles de la Vela / Envase
+              Colores Disponibles
             </label>
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="space-y-2 mb-2">
               {formData.colors.map((c, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-stone-200 bg-white shadow-2xs text-xs"
+                  className="flex items-center justify-between p-2 bg-stone-50 border rounded-lg"
                 >
-                  <span
-                    className="w-3.5 h-3.5 rounded-full border border-black/15 shadow-2xs"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                  <span className="text-stone-700 font-medium">{c.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-5 h-5 rounded-full border border-stone-300 shadow-2xs"
+                      style={{ backgroundColor: c.hex }}
+                    />
+                    <span className="text-xs font-medium text-stone-800">{c.name}</span>
+                    <span className="text-[10px] text-stone-400 font-mono uppercase">{c.hex}</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveColor(idx)}
-                    className="text-stone-400 hover:text-rose-600 ml-1"
+                    className="text-stone-400 hover:text-red-600 transition-colors"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
             </div>
 
+            {/* Add color */}
             <div className="flex items-center gap-2">
               <input
                 type="color"
                 value={newColorHex}
                 onChange={(e) => setNewColorHex(e.target.value)}
-                className="w-8 h-8 rounded-md border border-stone-300 p-0.5 cursor-pointer"
-                title="Seleccionar color"
+                className="w-8 h-8 rounded border border-stone-300 cursor-pointer p-0.5 bg-white"
               />
               <input
                 type="text"
                 value={newColorName}
                 onChange={(e) => setNewColorName(e.target.value)}
-                placeholder="Nombre del color (ej. Verde Abeto, Rosa Palo, Marfil)"
+                placeholder="Nombre del color (ej. Verde Bosque, Rojo Rubí)..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddColor();
+                  }
+                }}
                 className="flex-1 px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
               />
               <button
@@ -592,46 +1103,114 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 onClick={handleAddColor}
                 className="px-3 py-1.5 bg-stone-800 text-white rounded-lg text-xs font-medium hover:bg-black transition-colors flex items-center gap-1"
               >
-                <Plus className="w-3.5 h-3.5" /> Añadir Color
+                <Plus className="w-3.5 h-3.5" /> Agregar
               </button>
             </div>
           </div>
 
-          {/* Section: Incluye */}
+          {/* Image Upload & Unsplash Previews */}
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">
+              Fotografía de la Vela *
+            </label>
+            <div className="flex items-center gap-4">
+              <div className="relative w-24 h-24 rounded-lg border-2 border-stone-200 overflow-hidden bg-stone-100 flex-shrink-0">
+                <img
+                  src={formData.image}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-stone-800 text-white rounded-lg text-xs font-medium hover:bg-black transition-colors">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Subir Foto</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowGallery(!showGallery)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-stone-300 rounded-lg text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-stone-500" />
+                    <span>{showGallery ? 'Ocultar Galería' : 'Elegir de Galería Muestra'}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-stone-500">
+                  Sube una foto de alta calidad (JPG, PNG). Se optimizará y comprimirá automáticamente para el catálogo.
+                </p>
+              </div>
+            </div>
+
+            {/* Gallery Picker */}
+            {showGallery && (
+              <div className="mt-3 p-3 bg-stone-50 border rounded-xl space-y-2">
+                <p className="text-xs font-semibold text-stone-600">
+                  Selecciona una imagen de estudio profesional:
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {SAMPLE_GALLERY_IMAGES.map((sample, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, image: sample.url });
+                        setShowGallery(false);
+                      }}
+                      className="group relative aspect-square rounded-lg overflow-hidden border border-stone-200 hover:border-emerald-600 transition-all text-left"
+                    >
+                      <img
+                        src={sample.url}
+                        alt={sample.label}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                      <span className="absolute inset-x-0 bottom-0 bg-black/60 text-[9px] text-white p-1 truncate">
+                        {sample.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* What's included (Packaging & Extras) */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1 flex items-center gap-1.5">
-              <PackageCheck className="w-3.5 h-3.5 text-emerald-800" />
-              Incluye
+              <PackageCheck className="w-4 h-4 text-emerald-700" />
+              ¿Qué incluye este producto? (Empaque & Presentación)
             </label>
-            <p className="text-[11px] text-stone-500 mb-2">
-              Elementos y accesorios incluidos con este producto (ej. empaque, cerillos, tarjetas).
-            </p>
-
-            <div className="flex flex-wrap gap-1.5 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2 p-2 bg-stone-50 border rounded-lg min-h-[42px]">
               {(formData.includes || []).map((item, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200"
                 >
-                  <Check className="w-3 h-3 text-amber-600" />
+                  <Check className="w-3 h-3 text-amber-700" />
                   {item}
                   <button
                     type="button"
                     onClick={() => handleRemoveInclude(idx)}
-                    className="text-amber-700 hover:text-rose-600 ml-0.5 transition-colors"
-                    title="Eliminar elemento"
+                    className="hover:text-red-600 ml-0.5"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               ))}
               {(!formData.includes || formData.includes.length === 0) && (
-                <span className="text-xs text-stone-400 italic py-0.5">
-                  No hay elementos agregados en "Incluye".
-                </span>
+                <span className="text-xs text-stone-400 italic">Sin extras añadidos</span>
               )}
             </div>
 
+            {/* Input to add new include item */}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -643,7 +1222,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     handleAddInclude();
                   }
                 }}
-                placeholder="Agregar elemento (ej. Caja de regalo, Fósforos artesanales, Tarjeta dedicatoria...)"
+                placeholder="Ej. Caja de regalo kraft, Fósforos botánicos, Tapa de madera..."
                 className="flex-1 px-3 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-emerald-600 focus:outline-none"
               />
               <button

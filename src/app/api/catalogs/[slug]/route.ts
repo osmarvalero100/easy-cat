@@ -54,8 +54,8 @@ export async function PUT(request: Request, context: RouteContext) {
       catalog.slug = slug;
     }
 
-    await saveCatalog(catalog, user.id);
-    return NextResponse.json({ success: true, catalog });
+    const saved = await saveCatalog(catalog, user.id);
+    return NextResponse.json({ success: true, catalog: saved });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error al actualizar catálogo';
     return NextResponse.json({ error: message }, { status: 500 });

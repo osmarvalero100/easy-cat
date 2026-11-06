@@ -14,11 +14,20 @@ export interface CandleColor {
   hex: string;
 }
 
+export interface ProductGroup {
+  id: string;
+  name: string;
+  subtitle?: string;
+  description?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   sku?: string;
   price: number;
+  originalPrice?: number;
+  discountLabel?: string;
   currency: string;
   description: string;
   heightCm: number;
@@ -30,6 +39,7 @@ export interface Product {
   burnTimeHours?: number;
   waxType?: string;
   isSeasonalSpecial?: boolean;
+  groupId?: string;
   sortOrder?: number;
 }
 
@@ -178,6 +188,7 @@ export interface Catalog {
   featuredSectionTitle?: string;
   regularSectionTitle?: string;
   footerText?: string;
+  productGroups?: ProductGroup[];
   products: Product[];
   theme: ThemeConfig;
   contact: ContactInfo;

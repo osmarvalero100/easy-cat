@@ -14,6 +14,7 @@ import {
   Sparkles,
   BookOpen,
   Settings,
+  Loader2,
 } from 'lucide-react';
 
 interface HeaderNavbarProps {
@@ -30,6 +31,7 @@ interface HeaderNavbarProps {
   onOpenAIAssistant: () => void;
   onOpenAISettings: () => void;
   isSaved?: boolean;
+  isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   saveMessage?: string;
 }
@@ -48,6 +50,7 @@ export const HeaderNavbar: React.FC<HeaderNavbarProps> = ({
   onOpenAIAssistant,
   onOpenAISettings,
   isSaved = false,
+  isSaving = false,
   hasUnsavedChanges = false,
   saveMessage,
 }) => {
@@ -152,16 +155,24 @@ export const HeaderNavbar: React.FC<HeaderNavbarProps> = ({
           <button
             type="button"
             onClick={onSave}
+            disabled={isSaving}
             title="Guardar cambios del catálogo"
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs ${
-              isSaved
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+              isSaving
+                ? 'bg-amber-600 text-white opacity-80 cursor-wait'
+                : isSaved
                 ? 'bg-emerald-700 text-white hover:bg-emerald-600'
                 : hasUnsavedChanges
                 ? 'bg-amber-600 text-white hover:bg-amber-500 ring-2 ring-amber-400/40'
                 : 'bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-700 border border-stone-700'
             }`}
           >
-            {isSaved ? (
+            {isSaving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : isSaved ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-200" />
                 <span>{saveMessage || 'Guardado'}</span>

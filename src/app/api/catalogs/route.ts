@@ -66,13 +66,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Datos de catálogo incompletos.' }, { status: 400 });
     }
 
-    await saveCatalog(catalog, user.id);
+    const saved = await saveCatalog(catalog, user.id);
 
     return NextResponse.json({
       success: true,
       message: 'Catálogo guardado exitosamente en Easy Cat',
-      slug: catalog.slug,
-      id: catalog.id,
+      slug: saved.slug,
+      id: saved.id,
+      catalog: saved,
     });
   } catch (error: unknown) {
     console.error('Error saving catalog:', error);
