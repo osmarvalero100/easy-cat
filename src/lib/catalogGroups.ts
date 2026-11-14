@@ -44,15 +44,28 @@ export interface GroupedProductsItem {
 }
 
 /**
+ * Returns all products that are active (not paused).
+ */
+export function getVisibleProducts(catalog: Catalog): Product[] {
+  return (catalog.products || []).filter((p) => !p.isPaused);
+}
+
+/**
  * Groups catalog products by their assigned group.
+ * If options.includePaused is false (default), paused products are excluded from groups.
  * If products do not have a groupId, or have an invalid groupId:
  * - In legacy mode (no explicit productGroups), the first 2 products go to the 1st group,
  *   and remaining products go to the 2nd group (if available).
  * - Otherwise, unassigned products go to the first group, ensuring no product is ever hidden.
  */
-export function getGroupedProducts(catalog: Catalog): GroupedProductsItem[] {
+export function getGroupedProducts(
+  catalog: Catalog,
+  options?: { includePaused?: boolean }
+): GroupedProductsItem[] {
   const groups = normalizeProductGroups(catalog);
-  const products = catalog.products || [];
+  const includePaused = options?.includePaused ?? false;
+  const rawProducts = catalog.products || [];
+  const products = includePaused ? rawProducts : rawProducts.filter((p) => !p.isPaused);
 
   const groupMap = new Map<string, Product[]>();
   groups.forEach((g) => groupMap.set(g.id, []));
@@ -108,7 +121,8 @@ export interface CatalogPagesResult {
  * Returns the page items and the overall totalPages count (Cover + Product Pages + Back Cover).
  */
 export function getCatalogPages(catalog: Catalog, productsPerPage = 2): CatalogPagesResult {
-  const groupedItems = getGroupedProducts(catalog);
+  // Editorial pages only display active (non-paused) products
+  const groupedItems = getGroupedProducts(catalog, { includePaused: false });
   const pages: CatalogProductPageItem[] = [];
 
   let currentPageNumber = 2; // Page 1 is the Cover Page

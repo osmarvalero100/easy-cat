@@ -39,6 +39,8 @@ export interface Product {
   burnTimeHours?: number;
   waxType?: string;
   isSeasonalSpecial?: boolean;
+  isSoldOut?: boolean;
+  isPaused?: boolean;
   groupId?: string;
   sortOrder?: number;
 }

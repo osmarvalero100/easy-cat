@@ -43,9 +43,13 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
       ? `${catalog.theme.currencySymbol}${product.price.toLocaleString()} (Precio anterior: ~${catalog.theme.currencySymbol}${product.originalPrice!.toLocaleString()}~, ${Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100)}% OFF)`
       : `${catalog.theme.currencySymbol}${product.price.toLocaleString()}`;
 
-    const message = encodeURIComponent(
-      `¡Hola! Vi su catálogo "${catalog.title}" y me interesa ordenar la vela: *${product.name}* (Precio: ${priceText}). ¿Tienen disponibilidad?`
-    );
+    const message = product.isSoldOut
+      ? encodeURIComponent(
+          `¡Hola! Vi en su catálogo "${catalog.title}" la vela *${product.name}* y veo que figura como Agotada. ¿Tienen fecha estimada de disponibilidad o reposición?`
+        )
+      : encodeURIComponent(
+          `¡Hola! Vi su catálogo "${catalog.title}" y me interesa ordenar la vela: *${product.name}* (Precio: ${priceText}). ¿Tienen disponibilidad?`
+        );
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
 
@@ -208,12 +212,30 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
                 }
                 alt={product.name}
                 crossOrigin="anonymous"
-                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-500 ${
+                  product.isSoldOut ? 'opacity-80 grayscale-20' : ''
+                }`}
               />
 
+              {/* Sold out overlay & badge */}
+              {product.isSoldOut && (
+                <>
+                  <div className="absolute inset-0 bg-stone-900/20 pointer-events-none" />
+                  <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-stone-900/95 text-white shadow-md z-20 flex items-center gap-1.5 backdrop-blur-xs border border-white/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    Agotado
+                  </span>
+                </>
+              )}
+
               {/* Discount / Promotional Badge */}
-              {product.originalPrice && product.originalPrice > product.price && (
+              {product.originalPrice && product.originalPrice > product.price && !product.isSoldOut && (
                 <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600 text-white shadow-md z-10">
+                  {product.discountLabel || `-${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF`}
+                </span>
+              )}
+              {product.originalPrice && product.originalPrice > product.price && product.isSoldOut && (
+                <span className="absolute top-10 left-2.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-rose-600/90 text-white shadow-md z-10">
                   {product.discountLabel || `-${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF`}
                 </span>
               )}
@@ -344,14 +366,22 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
               <button
                 type="button"
                 onClick={() => handleWhatsAppOrder(product)}
-                className="mt-2 w-full py-2 px-3 rounded-lg md:rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs hover:opacity-90 active:scale-98 print:hidden"
-                style={{
-                  backgroundColor: palette.primary,
-                  color: '#FFFFFF',
-                }}
+                className={`mt-2 w-full py-2 px-3 rounded-lg md:rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs hover:opacity-90 active:scale-98 print:hidden ${
+                  product.isSoldOut
+                    ? 'bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300'
+                    : ''
+                }`}
+                style={
+                  product.isSoldOut
+                    ? {}
+                    : {
+                        backgroundColor: palette.primary,
+                        color: '#FFFFFF',
+                      }
+                }
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>Pedir esta vela por WhatsApp</span>
+                <MessageCircle className={`w-4 h-4 ${product.isSoldOut ? 'text-emerald-600' : ''}`} />
+                <span>{product.isSoldOut ? 'Agotado · Consultar reposición' : 'Pedir esta vela por WhatsApp'}</span>
               </button>
             )}
           </div>

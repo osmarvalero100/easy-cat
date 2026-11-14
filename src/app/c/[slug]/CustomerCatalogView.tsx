@@ -128,13 +128,18 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
       ? `${catalog.theme.currencySymbol}${product.price.toLocaleString()} (Precio anterior: ~${catalog.theme.currencySymbol}${product.originalPrice!.toLocaleString()}~, ${Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100)}% OFF)`
       : `${catalog.theme.currencySymbol}${product.price.toLocaleString()}`;
 
-    const message = encodeURIComponent(
-      `¡Hola! Vi el catálogo "${catalog.title}" y deseo ordenar la vela: *${product.name}* (${priceText}). ¿Podrían darme más información?`
-    );
+    const message = product.isSoldOut
+      ? encodeURIComponent(
+          `¡Hola! Vi en el catálogo "${catalog.title}" la vela *${product.name}* y veo que figura como Agotada. ¿Tienen fecha estimada de reposición o disponibilidad?`
+        )
+      : encodeURIComponent(
+          `¡Hola! Vi el catálogo "${catalog.title}" y deseo ordenar la vela: *${product.name}* (${priceText}). ¿Podrían darme más información?`
+        );
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
 
-  const filteredProducts = catalog.products.filter((p) => {
+  const visibleProducts = catalog.products.filter((p) => !p.isPaused);
+  const filteredProducts = visibleProducts.filter((p) => {
     const q = searchTerm.toLowerCase();
     return (
       p.name.toLowerCase().includes(q) ||
@@ -414,7 +419,7 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
 
           {/* Grouped Cards Sections */}
           {(() => {
-            const groupedList = getGroupedProducts(catalog);
+            const groupedList = getGroupedProducts(catalog, { includePaused: false });
             const filteredGrouped = selectedGroupFilter
               ? groupedList.filter((item) => item.group.id === selectedGroupFilter)
               : groupedList;
@@ -475,10 +480,26 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
                               <img
                                 src={candle.image}
                                 alt={candle.name}
-                                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                                className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-500 ${
+                                  candle.isSoldOut ? 'opacity-80 grayscale-20' : ''
+                                }`}
                               />
-                              {candle.originalPrice && candle.originalPrice > candle.price && (
+                              {candle.isSoldOut && (
+                                <>
+                                  <div className="absolute inset-0 bg-stone-900/20 pointer-events-none" />
+                                  <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-stone-900/95 text-white shadow-md z-20 flex items-center gap-1.5 backdrop-blur-xs border border-white/20">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                    Agotado
+                                  </span>
+                                </>
+                              )}
+                              {candle.originalPrice && candle.originalPrice > candle.price && !candle.isSoldOut && (
                                 <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-600 text-white shadow-md z-10">
+                                  {candle.discountLabel || `-${Math.round(((candle.originalPrice - candle.price) / candle.originalPrice) * 100)}% OFF`}
+                                </span>
+                              )}
+                              {candle.originalPrice && candle.originalPrice > candle.price && candle.isSoldOut && (
+                                <span className="absolute top-10 left-2.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-rose-600/90 text-white shadow-md z-10">
                                   {candle.discountLabel || `-${Math.round(((candle.originalPrice - candle.price) / candle.originalPrice) * 100)}% OFF`}
                                 </span>
                               )}
@@ -579,15 +600,26 @@ export function CustomerCatalogView({ initialCatalog, slug: propSlug }: Customer
                             )}
 
                             {/* Order via WhatsApp */}
-                            <button
-                              type="button"
-                              onClick={() => handleOrderWhatsApp(candle)}
-                              className="mt-auto w-full py-2 px-3 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-2xs hover:opacity-90 active:scale-98 transition-all"
-                              style={{ backgroundColor: '#25D366' }}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              <span>Pedir por WhatsApp</span>
-                            </button>
+                            {candle.isSoldOut ? (
+                              <button
+                                type="button"
+                                onClick={() => handleOrderWhatsApp(candle)}
+                                className="mt-auto w-full py-2 px-3 rounded-lg text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 border border-stone-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                              >
+                                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                                <span>Agotado · Consultar disponibilidad</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleOrderWhatsApp(candle)}
+                                className="mt-auto w-full py-2 px-3 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 shadow-2xs hover:opacity-90 active:scale-98 transition-all cursor-pointer"
+                                style={{ backgroundColor: '#25D366' }}
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                                <span>Pedir por WhatsApp</span>
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>

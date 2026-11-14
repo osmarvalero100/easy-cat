@@ -19,6 +19,8 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({
 }) => {
   // Editorial pages grouped by section (each grouping has its own pages and title)
   const { pages: catalogPages, totalPages } = getCatalogPages(catalog, 2);
+  const visibleProductsCount = catalog.products.filter((p) => !p.isPaused).length;
+  const pausedProductsCount = catalog.products.filter((p) => p.isPaused).length;
 
   const handleUpdateGroupTitle = (groupId: string, newTitle: string) => {
     if (!onChange) return;
@@ -62,7 +64,7 @@ export const CatalogPreview: React.FC<CatalogPreviewProps> = ({
               <span className="sm:hidden">Revista:</span>
             </span>
             <span className="px-2 py-0.5 rounded-full text-[11px] sm:text-xs font-mono bg-stone-100 text-stone-700">
-              {totalPages} pág. ({catalog.products.length} velas)
+              {totalPages} pág. ({visibleProductsCount} {visibleProductsCount === 1 ? 'vela visible' : 'velas visibles'}{pausedProductsCount > 0 ? ` · ${pausedProductsCount} pausadas` : ''})
             </span>
           </div>
 

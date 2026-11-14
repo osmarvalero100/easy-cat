@@ -163,6 +163,8 @@ export async function initDatabase(): Promise<void> {
         wax_type VARCHAR(100) DEFAULT '',
         is_seasonal_special TINYINT(1) DEFAULT 0,
         discount_label VARCHAR(100) NULL DEFAULT NULL,
+        is_sold_out TINYINT(1) DEFAULT 0,
+        is_paused TINYINT(1) DEFAULT 0,
         sort_order INT DEFAULT 0,
         fragrances JSON,
         colors JSON,
@@ -207,6 +209,30 @@ export async function initDatabase(): Promise<void> {
       }
     } catch (migErr) {
       console.warn('Could not check or alter discount_label column in products:', migErr);
+    }
+
+    // Ensure is_sold_out column exists in existing products table
+    try {
+      const [cols] = await pool.query<mysql.RowDataPacket[]>(
+        "SHOW COLUMNS FROM products LIKE 'is_sold_out'"
+      );
+      if (cols.length === 0) {
+        await pool.query("ALTER TABLE products ADD COLUMN is_sold_out TINYINT(1) DEFAULT 0 AFTER discount_label");
+      }
+    } catch (migErr) {
+      console.warn('Could not check or alter is_sold_out column in products:', migErr);
+    }
+
+    // Ensure is_paused column exists in existing products table
+    try {
+      const [cols] = await pool.query<mysql.RowDataPacket[]>(
+        "SHOW COLUMNS FROM products LIKE 'is_paused'"
+      );
+      if (cols.length === 0) {
+        await pool.query("ALTER TABLE products ADD COLUMN is_paused TINYINT(1) DEFAULT 0 AFTER is_sold_out");
+      }
+    } catch (migErr) {
+      console.warn('Could not check or alter is_paused column in products:', migErr);
     }
 
     // 6. User AI Settings table (BYOK - Bring Your Own Key)
@@ -578,6 +604,8 @@ export async function getCatalogByIdOrSlug(idOrSlug: string, userId?: number): P
       burnTimeHours: p.burn_time_hours ? Number(p.burn_time_hours) : undefined,
       waxType: p.wax_type || undefined,
       isSeasonalSpecial: Boolean(p.is_seasonal_special),
+      isSoldOut: Boolean(p.is_sold_out),
+      isPaused: Boolean(p.is_paused),
       sortOrder: Number(p.sort_order || 0),
     };
   });
@@ -740,6 +768,8 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<Cat
         const burnTimeHours = (p.burnTimeHours != null && Number.isFinite(Number(p.burnTimeHours))) ? Number(p.burnTimeHours) : null;
         const waxType = p.waxType || '';
         const isSeasonalSpecial = Boolean(p.isSeasonalSpecial);
+        const isSoldOut = Boolean(p.isSoldOut);
+        const isPaused = Boolean(p.isPaused);
 
         savedProducts.push({
           ...p,
@@ -753,6 +783,8 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<Cat
           burnTimeHours: burnTimeHours ?? undefined,
           waxType: waxType || undefined,
           isSeasonalSpecial,
+          isSoldOut,
+          isPaused,
           sortOrder: index,
         });
 
@@ -773,6 +805,8 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<Cat
           waxType,
           isSeasonalSpecial ? 1 : 0,
           discountLabel,
+          isSoldOut ? 1 : 0,
+          isPaused ? 1 : 0,
           index,
           JSON.stringify(p.fragrances || []),
           JSON.stringify(p.colors || []),
@@ -784,7 +818,7 @@ export async function saveCatalog(catalog: Catalog, userId: number): Promise<Cat
         `INSERT INTO products (
           id, catalog_id, group_id, name, sku, price, original_price, currency, description,
           height_cm, width_cm, image, burn_time_hours, wax_type,
-          is_seasonal_special, discount_label, sort_order, fragrances, colors, includes
+          is_seasonal_special, discount_label, is_sold_out, is_paused, sort_order, fragrances, colors, includes
         ) VALUES ?`,
         [productValues]
       );
