@@ -468,7 +468,7 @@ export const ProductListEditor: React.FC<ProductListEditorProps> = ({
             ) : (
               <>
                 <Save className="w-3.5 h-3.5" />
-                <span>Guardar en BD</span>
+                <span>Guardar cambios</span>
               </>
             )}
           </button>
