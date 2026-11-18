@@ -452,7 +452,7 @@ export const ProductListEditor: React.FC<ProductListEditorProps> = ({
         <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-300 rounded-xl text-xs gap-2">
           <div className="flex items-center gap-2 text-amber-900 font-medium">
             <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>Tienes cambios pendientes sin guardar en la base de datos MySQL.</span>
+            <span>Tienes cambios pendientes por guardar.</span>
           </div>
           <button
             type="button"
