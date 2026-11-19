@@ -101,19 +101,14 @@ export const exportCatalogToPdfFile = async (
       clonedPage.style.transform = 'none';
       clonedPage.style.overflow = 'hidden';
 
-      // Adjust padding based on page type
-      const isProductPage = clonedPage.querySelector('.grid') !== null;
-      if (isProductPage) {
-        clonedPage.style.padding = '36px 42px';
-      } else {
-        clonedPage.style.padding = '48px 52px';
-      }
+      // Uniform high-end editorial padding matching A4 print proportions
+      clonedPage.style.padding = '42px 48px';
 
       // Remove any interactive buttons (e.g. "Pedir esta vela por WhatsApp") and print-hidden items
       const interactiveButtons = clonedPage.querySelectorAll('button, .print\\:hidden');
       interactiveButtons.forEach((btn) => btn.remove());
 
-      // Ensure product grid is strictly 2 columns on product pages
+      // Ensure product grid is strictly 2 columns on product pages with stretch alignment
       const grids = clonedPage.querySelectorAll('.grid');
       grids.forEach((grid) => {
         grid.classList.remove('grid-cols-1');
@@ -121,6 +116,25 @@ export const exportCatalogToPdfFile = async (
         (grid as HTMLElement).style.display = 'grid';
         (grid as HTMLElement).style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
         (grid as HTMLElement).style.gap = '20px';
+        (grid as HTMLElement).style.alignItems = 'stretch';
+      });
+
+      // Ensure product image container is square and uniform
+      const productImgs = clonedPage.querySelectorAll('.product-card-img-container');
+      productImgs.forEach((imgWrap) => {
+        (imgWrap as HTMLElement).style.height = '190px';
+        (imgWrap as HTMLElement).style.maxHeight = '190px';
+        (imgWrap as HTMLElement).style.width = '100%';
+        (imgWrap as HTMLElement).style.overflow = 'hidden';
+      });
+
+      // Ensure cover hero image container has controlled height
+      const coverHeroImgs = clonedPage.querySelectorAll('.cover-hero-img-container');
+      coverHeroImgs.forEach((imgWrap) => {
+        (imgWrap as HTMLElement).style.height = '270px';
+        (imgWrap as HTMLElement).style.maxHeight = '270px';
+        (imgWrap as HTMLElement).style.width = '100%';
+        (imgWrap as HTMLElement).style.overflow = 'hidden';
       });
 
       // Clear backdrop-filters which can cause rendering anomalies in html2canvas
@@ -153,20 +167,20 @@ export const exportCatalogToPdfFile = async (
       stagingContainer.replaceChildren(clonedPage);
 
       // Brief pause for browser layout stabilization
-      await new Promise((r) => setTimeout(r, 80));
+      await new Promise((r) => setTimeout(r, 100));
 
       const pageBg = getComputedStyle(pageEl).backgroundColor || '#FAF8F5';
 
-      // High-resolution canvas capture (scale 2 = 1588 x 2246 px for crisp vector-like print)
+      // High-resolution canvas capture (scale: 2.2 = 1746 x 2470 px for sharp, crisp print)
       const canvas = await html2canvas(clonedPage, {
-        scale: 2,
+        scale: 2.2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: pageBg,
         logging: false,
         width: A4_WIDTH_PX,
         height: A4_HEIGHT_PX,
-        windowWidth: 1280,
+        windowWidth: A4_WIDTH_PX,
       });
 
       const imgData = canvas.toDataURL('image/jpeg', 0.98);

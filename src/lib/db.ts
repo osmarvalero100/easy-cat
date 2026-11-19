@@ -246,10 +246,22 @@ export async function initDatabase(): Promise<void> {
         is_active TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_user_provider (user_id, provider),
         INDEX idx_ai_user (user_id),
         CONSTRAINT fk_ai_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    try {
+      const [aiIndices] = await pool.query<mysql.RowDataPacket[]>(
+        "SHOW INDEX FROM user_ai_settings WHERE Key_name = 'uniq_user_provider'"
+      );
+      if (aiIndices.length === 0) {
+        await pool.query("ALTER TABLE user_ai_settings ADD UNIQUE KEY uniq_user_provider (user_id, provider)");
+      }
+    } catch {
+      // index might already exist
+    }
 
     global.__dbInitialized = true;
   })();
@@ -915,21 +927,49 @@ export async function getAISettingsByUserId(userId: number): Promise<UserAISetti
 export async function saveAISettings(
   userId: number,
   provider: string,
-  apiKey: string,
-  modelName?: string
+  apiKey?: string,
+  modelName?: string,
+  isActive: boolean = true
 ): Promise<void> {
   await initDatabase();
   const pool = getPool();
-  await pool.query(
-    `INSERT INTO user_ai_settings (user_id, provider, api_key, model_name, is_active)
-     VALUES (?, ?, ?, ?, 1)
-     ON DUPLICATE KEY UPDATE
-       api_key = VALUES(api_key),
-       model_name = VALUES(model_name),
-       is_active = 1,
-       updated_at = CURRENT_TIMESTAMP`,
-    [userId, provider, apiKey.trim(), modelName || null]
+
+  if (isActive) {
+    // If activating this provider, mark others as inactive so only one is primary
+    await pool.query('UPDATE user_ai_settings SET is_active = 0 WHERE user_id = ?', [userId]);
+  }
+
+  if (apiKey && apiKey.trim()) {
+    await pool.query(
+      `INSERT INTO user_ai_settings (user_id, provider, api_key, model_name, is_active)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         api_key = VALUES(api_key),
+         model_name = VALUES(model_name),
+         is_active = VALUES(is_active),
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, provider, apiKey.trim(), modelName?.trim() || null, isActive ? 1 : 0]
+    );
+  } else {
+    // Updating without modifying the secret API key
+    await pool.query(
+      `UPDATE user_ai_settings
+       SET model_name = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = ? AND provider = ?`,
+      [modelName?.trim() || null, isActive ? 1 : 0, userId, provider]
+    );
+  }
+}
+
+export async function setActiveAIProvider(userId: number, provider: string): Promise<boolean> {
+  await initDatabase();
+  const pool = getPool();
+  await pool.query('UPDATE user_ai_settings SET is_active = 0 WHERE user_id = ?', [userId]);
+  const [result] = await pool.query<mysql.ResultSetHeader>(
+    'UPDATE user_ai_settings SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND provider = ?',
+    [userId, provider]
   );
+  return result.affectedRows > 0;
 }
 
 export async function deleteAISettings(userId: number, provider: string): Promise<boolean> {

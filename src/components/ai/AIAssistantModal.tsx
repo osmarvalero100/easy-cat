@@ -40,6 +40,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   const [activeTab, setActiveTab] = useState<'product' | 'intro' | 'extract'>(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [activeAIConfig, setActiveAIConfig] = useState<{ provider: string; modelName?: string } | null>(null);
 
   // Form states
   const [productName, setProductName] = useState(currentProduct?.name || '');
@@ -56,6 +57,19 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       setWaxMaterial(currentProduct?.waxType || 'Cera de Soya');
       setErrorMsg(null);
       setGeneratedResult(null);
+
+      // Load active AI config
+      fetch('/api/ai/settings')
+        .then((res) => res.json())
+        .then((data) => {
+          const active = (data.settings || []).find((s: any) => s.isActive) || data.settings?.[0];
+          if (active) {
+            setActiveAIConfig({ provider: active.provider, modelName: active.modelName });
+          } else {
+            setActiveAIConfig(null);
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen, initialTab, currentProduct]);
 
@@ -104,21 +118,33 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         body: JSON.stringify({ task, payload }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        console.error('Failed to parse generate response JSON:', jsonErr);
+      }
+
       if (!res.ok) {
-        if (data.code === 'NO_AI_CONFIGURED') {
+        if (data?.code === 'NO_AI_CONFIGURED') {
           setErrorMsg('No tienes ninguna clave de IA conectada. Configura tu suscripción primero.');
         } else {
-          setErrorMsg(data.error || 'Ocurrió un error al generar con IA.');
+          setErrorMsg(data?.error || `Error del servidor (${res.status}): No se pudo procesar la generación con IA.`);
         }
         setIsLoading(false);
         return;
       }
 
+      if (!data?.result) {
+        setErrorMsg('El proveedor de IA no devolvió un resultado válido.');
+        setIsLoading(false);
+        return;
+      }
+
       setGeneratedResult(data.result);
-    } catch (err) {
+    } catch (err: any) {
       console.error('AI generation error:', err);
-      setErrorMsg('Error de conexión al generar con IA.');
+      setErrorMsg(err?.message ? `Error de conexión: ${err.message}` : 'Error de conexión al generar con IA.');
     } finally {
       setIsLoading(false);
     }
@@ -160,10 +186,27 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           </div>
 
           <div className="flex items-center space-x-2">
+            {activeAIConfig && (
+              <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-stone-800/90 border border-stone-700 rounded-xl text-xs text-stone-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span className="font-semibold capitalize text-white">
+                  {activeAIConfig.provider === 'gemini'
+                    ? 'Gemini'
+                    : activeAIConfig.provider === 'openai'
+                    ? 'OpenAI'
+                    : activeAIConfig.provider === 'anthropic'
+                    ? 'Claude'
+                    : 'OpenRouter'}
+                </span>
+                <span className="text-amber-300/80 font-mono text-[11px]">
+                  ({activeAIConfig.modelName || 'Predeterminado'})
+                </span>
+              </div>
+            )}
             <button
               type="button"
               onClick={onOpenAISettings}
-              title="Configurar claves de IA"
+              title="Configurar claves y modelo de IA"
               className="px-3 py-1.5 text-xs text-stone-300 hover:text-white hover:bg-stone-700/60 rounded-xl flex items-center gap-1.5 transition border border-stone-700"
             >
               <Settings className="w-3.5 h-3.5 text-amber-400" />
@@ -228,19 +271,20 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         {/* Body */}
         <div className="px-7 sm:px-8 pt-7 pb-7 overflow-y-auto flex-1 space-y-5">
           {errorMsg && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-start space-x-2">
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start space-x-2.5">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span>{errorMsg}</span>
-                {errorMsg.includes('Configura tu suscripción') && (
+              <div className="flex-1 space-y-1.5">
+                <span className="block leading-relaxed">{errorMsg}</span>
+                <div className="pt-0.5">
                   <button
                     type="button"
                     onClick={onOpenAISettings}
-                    className="block font-bold underline text-amber-800 mt-1"
+                    className="inline-flex items-center gap-1 font-bold underline text-amber-900 hover:text-amber-950 transition"
                   >
-                    Conectar clave de OpenAI / Gemini / Claude aquí →
+                    <Settings className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Cambiar modelo o editar clave en Configuración de IA →</span>
                   </button>
-                )}
+                </div>
               </div>
             </div>
           )}

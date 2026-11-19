@@ -173,7 +173,7 @@ export const CatalogBackCoverPage: React.FC<CatalogBackCoverPageProps> = ({
                   href={`https://wa.me/${phoneOnly}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 p-1.5 sm:p-2 rounded-sm transition-all hover:bg-black/5"
+                  className="flex items-center gap-2.5 p-2 rounded-sm transition-all hover:bg-black/5"
                   style={{ color: palette.textPrimary }}
                 >
                   <div
@@ -182,9 +182,9 @@ export const CatalogBackCoverPage: React.FC<CatalogBackCoverPageProps> = ({
                   >
                     <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[9px] uppercase font-bold tracking-wider opacity-60">WhatsApp Pedidos</span>
-                    <span className="font-semibold text-xs truncate">{contact.whatsapp}</span>
+                  <div className="flex flex-col min-w-0 flex-1 justify-center">
+                    <span className="text-[9px] uppercase font-bold tracking-wider opacity-60 leading-tight">WhatsApp Pedidos</span>
+                    <span className="font-semibold text-xs truncate leading-normal">{contact.whatsapp}</span>
                   </div>
                 </a>
               )}
@@ -194,7 +194,7 @@ export const CatalogBackCoverPage: React.FC<CatalogBackCoverPageProps> = ({
                   href={contact.website!.startsWith('http') ? contact.website! : `https://${contact.website!}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 p-1.5 sm:p-2 rounded-sm transition-all hover:bg-black/5"
+                  className="flex items-center gap-2.5 p-2 rounded-sm transition-all hover:bg-black/5"
                   style={{ color: palette.textPrimary }}
                 >
                   <div
@@ -203,9 +203,9 @@ export const CatalogBackCoverPage: React.FC<CatalogBackCoverPageProps> = ({
                   >
                     <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[9px] uppercase font-bold tracking-wider opacity-60">Sitio Web</span>
-                    <span className="font-semibold text-xs truncate">{contact.website!.replace(/^https?:\/\//, '')}</span>
+                  <div className="flex flex-col min-w-0 flex-1 justify-center">
+                    <span className="text-[9px] uppercase font-bold tracking-wider opacity-60 leading-tight">Sitio Web</span>
+                    <span className="font-semibold text-xs truncate leading-normal">{contact.website!.replace(/^https?:\/\//, '')}</span>
                   </div>
                 </a>
               )}
@@ -215,7 +215,7 @@ export const CatalogBackCoverPage: React.FC<CatalogBackCoverPageProps> = ({
                   href={contact.instagram!.startsWith('http') ? contact.instagram! : `https://instagram.com/${contact.instagram!.replace(/^@/, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 p-1.5 sm:p-2 rounded-sm transition-all hover:bg-black/5"
+                  className="flex items-center gap-2.5 p-2 rounded-sm transition-all hover:bg-black/5"
                   style={{ color: palette.textPrimary }}
                 >
                   <div
@@ -224,9 +224,9 @@ export const CatalogBackCoverPage: React.FC<CatalogBackCoverPageProps> = ({
                   >
                     <AtSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[9px] uppercase font-bold tracking-wider opacity-60">Instagram</span>
-                    <span className="font-semibold text-xs truncate">{contact.instagram}</span>
+                  <div className="flex flex-col min-w-0 flex-1 justify-center">
+                    <span className="text-[9px] uppercase font-bold tracking-wider opacity-60 leading-tight">Instagram</span>
+                    <span className="font-semibold text-xs truncate leading-normal">{contact.instagram}</span>
                   </div>
                 </a>
               )}

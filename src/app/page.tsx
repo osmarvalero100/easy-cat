@@ -460,7 +460,10 @@ export default function EasyCatMainPage() {
 
           {/* Inactivity Unsaved Changes Alert Banner */}
           {showInactivitySaveAlert && (
-            <div className="bg-amber-500 text-stone-900 px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-xs sticky top-[53px] z-30">
+            <div
+              id="inactivity-save-alert"
+              className="bg-amber-500 text-stone-900 px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-xs sticky top-[53px] z-30 print:hidden"
+            >
               <div className="flex items-center space-x-2">
                 <Clock className="w-4 h-4 shrink-0 animate-pulse text-amber-950" />
                 <span>
@@ -488,7 +491,7 @@ export default function EasyCatMainPage() {
           )}
 
           {/* Mobile View Toggle */}
-          <div className="lg:hidden bg-stone-200 border-b border-stone-300 p-2 flex justify-center sticky top-[53px] z-20">
+          <div className="lg:hidden bg-stone-200 border-b border-stone-300 p-2 flex justify-center sticky top-[53px] z-20 print:hidden">
             <div className="inline-flex rounded-xl bg-white p-1 shadow-xs border border-stone-300">
               <button
                 type="button"
@@ -518,10 +521,10 @@ export default function EasyCatMainPage() {
           </div>
 
           {/* Studio Workspace: Dual Columns */}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden print:overflow-visible print:block">
             {/* Left: Editor Panel */}
             <aside
-              className={`w-full lg:w-[480px] xl:w-[520px] 2xl:w-[560px] bg-white border-r border-stone-200 flex flex-col shrink-0 ${
+              className={`w-full lg:w-[480px] xl:w-[520px] 2xl:w-[560px] bg-white border-r border-stone-200 flex flex-col shrink-0 print:hidden ${
                 mobileTab === 'editor' ? 'flex' : 'hidden lg:flex'
               }`}
             >
@@ -546,11 +549,11 @@ export default function EasyCatMainPage() {
 
             {/* Right: Realistic A4 Magazine Live Preview */}
             <main
-              className={`flex-1 bg-stone-200/90 overflow-y-auto p-4 sm:p-6 lg:p-8 flex justify-center ${
+              className={`flex-1 bg-stone-200/90 overflow-y-auto p-4 sm:p-6 lg:p-8 flex justify-center print:p-0 print:m-0 print:bg-transparent print:overflow-visible print:w-full print:block ${
                 mobileTab === 'preview' ? 'flex' : 'hidden lg:flex'
               }`}
             >
-              <div className="w-full max-w-[850px]">
+              <div className="w-full max-w-[850px] print:max-w-none print:w-full print:m-0 print:p-0">
                 <CatalogPreview
                   catalog={catalog}
                   onChange={handleCatalogChange}

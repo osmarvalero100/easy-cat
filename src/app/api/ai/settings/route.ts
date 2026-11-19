@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth';
-import { getAISettingsByUserId, saveAISettings, deleteAISettings } from '@/lib/db';
+import { getAISettingsByUserId, saveAISettings, deleteAISettings, setActiveAIProvider } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
@@ -12,8 +12,11 @@ export async function GET(request: Request) {
     const settings = await getAISettingsByUserId(user.id);
     // Mask sensitive keys for client display
     const masked = settings.map((s) => ({
-      ...s,
-      apiKey: s.apiKey.length > 8 ? `${s.apiKey.slice(0, 4)}...${s.apiKey.slice(-4)}` : '••••••••',
+      id: s.id,
+      provider: s.provider,
+      apiKey: s.apiKey.length > 8 ? `${s.apiKey.slice(0, 4)}••••${s.apiKey.slice(-4)}` : '••••••••',
+      modelName: s.modelName,
+      isActive: s.isActive,
       hasKey: Boolean(s.apiKey),
     }));
 
@@ -33,18 +36,68 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { provider, apiKey, modelName } = body || {};
+    const { provider, apiKey, modelName, isActive } = body || {};
 
-    if (!provider || !apiKey) {
-      return NextResponse.json({ error: 'Proveedor y Clave API son obligatorios' }, { status: 400 });
+    if (!provider) {
+      return NextResponse.json({ error: 'Proveedor es obligatorio' }, { status: 400 });
     }
 
-    await saveAISettings(user.id, provider, apiKey.trim(), modelName);
+    const existingSettings = await getAISettingsByUserId(user.id);
+    const existing = existingSettings.find((s) => s.provider === provider);
 
-    return NextResponse.json({ success: true, message: 'Clave API guardada exitosamente' });
+    const hasNewKey = Boolean(apiKey && apiKey.trim());
+    if (!hasNewKey && !existing) {
+      return NextResponse.json({ error: 'Por favor ingresa la Clave API de tu suscripción' }, { status: 400 });
+    }
+
+    // Determine target model name
+    let targetModel = modelName !== undefined ? modelName.trim() : existing?.modelName;
+    if (targetModel === '') {
+      targetModel = undefined;
+    }
+
+    await saveAISettings(
+      user.id,
+      provider,
+      hasNewKey ? apiKey.trim() : undefined,
+      targetModel,
+      isActive !== undefined ? Boolean(isActive) : true
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: existing ? 'Configuración de IA actualizada con éxito' : 'Clave de IA configurada con éxito',
+    });
   } catch (error: unknown) {
     console.error('Error saving AI settings:', error);
     const message = error instanceof Error ? error.message : 'Error al guardar configuración de IA';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const provider = searchParams.get('provider');
+
+    if (!provider) {
+      return NextResponse.json({ error: 'Proveedor no especificado' }, { status: 400 });
+    }
+
+    const success = await setActiveAIProvider(user.id, provider);
+    if (!success) {
+      return NextResponse.json({ error: 'No se encontró el proveedor especificado' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, message: `Proveedor ${provider} activado como predeterminado` });
+  } catch (error: unknown) {
+    console.error('Error activating AI provider:', error);
+    const message = error instanceof Error ? error.message : 'Error al activar proveedor';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

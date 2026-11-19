@@ -185,16 +185,16 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
 
       {/* Products Grid (2 products per editorial A4 page for high luxury presentation) */}
       <div
-        className={`relative z-10 my-3 md:my-auto py-2 grid ${
+        className={`relative z-10 my-2 md:my-auto py-1 grid ${
           isPrintMode ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2'
-        } print:grid-cols-2 gap-5 md:gap-8 flex-1 items-start w-full`}
+        } print:grid-cols-2 gap-4 md:gap-6 flex-1 items-stretch w-full`}
       >
         {products.map((product) => (
           <div
             key={product.id}
             className={`group flex flex-col h-full bg-white/70 ${
               isPrintMode ? '' : 'backdrop-blur-xs'
-            } rounded-lg md:rounded-md border p-4 sm:p-5 shadow-2xs hover:shadow-md transition-all`}
+            } rounded-lg md:rounded-md border p-3.5 sm:p-4 shadow-2xs hover:shadow-md transition-all justify-between`}
             style={{
               borderColor: palette.border,
               backgroundColor: palette.cardBackground,
@@ -202,7 +202,7 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
           >
             {/* Product Image */}
             <div
-              className="relative aspect-square sm:aspect-square w-full max-h-72 sm:max-h-80 md:max-h-none overflow-hidden rounded-md md:rounded-sm bg-stone-100 mb-3.5 border shrink-0"
+              className="product-card-img-container relative aspect-square w-full h-[180px] sm:h-[200px] md:h-[220px] overflow-hidden rounded-md md:rounded-sm bg-stone-100 mb-3 border shrink-0"
               style={{ borderColor: palette.border }}
             >
               <img
@@ -212,7 +212,7 @@ export const CatalogProductPage: React.FC<CatalogProductPageProps> = ({
                 }
                 alt={product.name}
                 crossOrigin="anonymous"
-                className={`w-full h-full object-cover group-hover:scale-103 transition-transform duration-500 ${
+                className={`w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-500 ${
                   product.isSoldOut ? 'opacity-80 grayscale-20' : ''
                 }`}
               />

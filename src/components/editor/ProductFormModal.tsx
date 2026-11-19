@@ -251,17 +251,21 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {}
+
       if (!res.ok) {
-        if (data.code === 'NO_AI_CONFIGURED') {
+        if (data?.code === 'NO_AI_CONFIGURED') {
           setAiError('No tienes una clave de IA configurada. Ve a Asistente IA > Configuración.');
         } else {
-          setAiError(data.error || 'Error al generar descripción con IA.');
+          setAiError(data?.error || `Error (${res.status}): No se pudo generar la descripción con IA.`);
         }
         return;
       }
 
-      if (data.result?.description) {
+      if (data?.result?.description) {
         setFormData((prev) => ({
           ...prev,
           description: data.result.description,
@@ -271,8 +275,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               : prev.fragrances,
         }));
       }
-    } catch {
-      setAiError('Error de conexión con la IA.');
+    } catch (err: any) {
+      setAiError(err?.message ? `Error de conexión: ${err.message}` : 'Error de conexión con la IA.');
     } finally {
       setIsGeneratingAI(false);
     }

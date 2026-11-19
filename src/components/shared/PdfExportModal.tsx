@@ -54,9 +54,15 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
   const handlePrint = () => {
     onClose();
+    // Temporarily set document.title to clean catalog name for default PDF filename in browser print dialog
+    const originalTitle = document.title;
+    document.title = cleanFilename.replace(/\.pdf$/i, '');
     setTimeout(() => {
       printBrowserCatalog();
-    }, 200);
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 4000);
+    }, 250);
   };
 
   if (!isOpen || !mounted) return null;
@@ -106,46 +112,46 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Native Browser Print Option */}
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="w-full p-4 rounded-xl border-2 border-amber-800/40 hover:border-amber-900 bg-amber-50/30 hover:bg-amber-50/60 text-left transition-all group flex items-start gap-3.5 shadow-2xs"
+            >
+              <div className="w-9 h-9 rounded-lg bg-amber-900 text-amber-200 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-xs">
+                <Printer className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-stone-900">Guardar como PDF / Impresión (Vectorial)</h4>
+                  <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
+                    Recomendado
+                  </span>
+                </div>
+                <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                  Abre la ventana de impresión. Selecciona <strong>"Guardar como PDF"</strong> para obtener textos 100% nítidos, vectoriales, colores exactos y calidad de imprenta.
+                </p>
+              </div>
+            </button>
+
             {/* Direct Download Option */}
             <button
               type="button"
               onClick={handleDownloadPdf}
-              className="w-full p-4 rounded-xl border border-stone-200 hover:border-emerald-600 hover:bg-emerald-50/40 text-left transition-all group flex items-start gap-3.5 shadow-2xs"
+              className="w-full p-4 rounded-xl border border-stone-200 hover:border-stone-400 hover:bg-stone-50 text-left transition-all group flex items-start gap-3.5 shadow-2xs"
             >
-              <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-9 h-9 rounded-lg bg-stone-100 text-stone-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                 <FileDown className="w-5 h-5" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-stone-900">Descarga Directa (.PDF)</h4>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold">
+                  <span className="text-[10px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-semibold">
                     1 Clic
                   </span>
                 </div>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Genera automáticamente un archivo PDF A4 listo para guardar y compartir.
-                </p>
-              </div>
-            </button>
-
-            {/* Native Browser Print Option */}
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="w-full p-4 rounded-xl border border-stone-200 hover:border-stone-400 hover:bg-stone-50 text-left transition-all group flex items-start gap-3.5 shadow-2xs"
-            >
-              <div className="w-9 h-9 rounded-lg bg-stone-100 text-stone-800 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                <Printer className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-stone-900">Imprimir / Calidad Editorial</h4>
-                  <span className="text-[10px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-medium">
-                    Vectorial
-                  </span>
-                </div>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Abre la ventana de impresión del navegador. Ideal para imprentas con textos 100% nítidos.
+                <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+                  Genera y descarga un archivo PDF A4 listo para compartir por WhatsApp o email sin abrir ventanas adicionales.
                 </p>
               </div>
             </button>

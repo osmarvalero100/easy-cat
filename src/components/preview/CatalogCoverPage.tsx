@@ -35,9 +35,9 @@ export const CatalogCoverPage: React.FC<CatalogCoverPageProps> = ({
       />
 
       {/* Top Header / Brand Logo & Season Badge */}
-      <div className="relative z-10 flex flex-col items-center text-center pt-2">
+      <div className="relative z-10 flex flex-col items-center text-center pt-1 sm:pt-2">
         <div
-          className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center mb-2.5 sm:mb-3 shadow-sm overflow-hidden border transition-all"
+          className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 shadow-sm overflow-hidden border transition-all shrink-0"
           style={{
             borderColor: `${palette.primary}30`,
             backgroundColor: hasCustomLogo(catalog.brandLogo) ? '#ffffff' : `${palette.primary}12`,
@@ -48,11 +48,11 @@ export const CatalogCoverPage: React.FC<CatalogCoverPageProps> = ({
               src={catalog.brandLogo!}
               alt={catalog.brandName || 'Marca'}
               crossOrigin="anonymous"
-              className="w-full h-full object-contain p-1.5 rounded-full"
+              className="w-full h-full object-contain p-1 rounded-full"
             />
           ) : (
             <span
-              className="font-serif font-bold text-2xl sm:text-3xl md:text-4xl tracking-wider select-none"
+              className="font-serif font-bold text-2xl sm:text-3xl tracking-wider select-none"
               style={{ color: palette.primary }}
             >
               {getBrandInitials(catalog.brandName)}
@@ -69,7 +69,7 @@ export const CatalogCoverPage: React.FC<CatalogCoverPageProps> = ({
 
         {catalog.seasonTag && (
           <span
-            className="mt-2 inline-block px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] uppercase tracking-widest font-medium"
+            className="mt-1.5 inline-block px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] uppercase tracking-widest font-medium"
             style={{
               backgroundColor: `${palette.secondary}20`,
               color: palette.primary,
@@ -82,38 +82,38 @@ export const CatalogCoverPage: React.FC<CatalogCoverPageProps> = ({
       </div>
 
       {/* Hero Featured Photography */}
-      <div className="relative z-10 my-2 sm:my-3 flex-1 flex flex-col items-center justify-center w-full min-h-0">
+      <div className="relative z-10 my-3 sm:my-4 flex flex-col items-center justify-center w-full min-h-0 shrink-0">
         <div
-          className="w-full max-h-[200px] sm:max-h-[270px] md:max-h-[340px] overflow-hidden rounded-sm shadow-md border"
+          className="cover-hero-img-container w-full h-[220px] sm:h-[260px] md:h-[300px] overflow-hidden rounded-sm shadow-md border"
           style={{ borderColor: `${palette.border}` }}
         >
           <img
             src={catalog.coverImage}
             alt={catalog.title}
             crossOrigin="anonymous"
-            className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+            className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
           />
         </div>
       </div>
 
       {/* Title & Editorial Description */}
-      <div className="relative z-10 text-center flex flex-col items-center max-w-xl mx-auto pb-2 sm:pb-4">
+      <div className="relative z-10 text-center flex flex-col items-center max-w-xl mx-auto pb-2 sm:pb-3">
         <h1
-          className="font-serif text-2xl sm:text-3xl md:text-5xl font-normal tracking-wide uppercase leading-tight mb-2 md:mb-3"
+          className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal tracking-wide uppercase leading-tight mb-1.5 md:mb-2"
           style={{ color: palette.primary }}
         >
           {catalog.title}
         </h1>
 
         <p
-          className="font-serif italic text-sm sm:text-base md:text-lg opacity-85 mb-2 sm:mb-4"
+          className="font-serif italic text-sm sm:text-base md:text-lg opacity-85 mb-1.5 sm:mb-2"
           style={{ color: palette.textSecondary }}
         >
           {catalog.subtitle}
         </p>
 
         <div
-          className="w-20 sm:w-24 h-[1px] my-2 sm:my-3"
+          className="w-20 sm:w-24 h-[1px] my-1.5 sm:my-2"
           style={{ backgroundColor: palette.secondary }}
         />
 
