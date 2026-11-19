@@ -10,6 +10,8 @@ import {
   Check,
   AlertCircle,
   Settings,
+  Image as ImageIcon,
+  RefreshCw,
 } from 'lucide-react';
 
 interface AIAssistantModalProps {
@@ -18,10 +20,11 @@ interface AIAssistantModalProps {
   brandName: string;
   seasonTag?: string;
   currentProduct?: Product | null;
-  initialTab?: 'product' | 'intro' | 'extract';
+  initialTab?: 'product' | 'intro' | 'extract' | 'cover';
   onApplyDescription?: (desc: string, fragrances?: string[]) => void;
   onApplyIntroText?: (intro: string) => void;
   onAddExtractedProducts?: (products: Partial<Product>[]) => void;
+  onApplyCoverImage?: (imageUrl: string) => void;
   onOpenAISettings: () => void;
 }
 
@@ -35,9 +38,10 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   onApplyDescription,
   onApplyIntroText,
   onAddExtractedProducts,
+  onApplyCoverImage,
   onOpenAISettings,
 }) => {
-  const [activeTab, setActiveTab] = useState<'product' | 'intro' | 'extract'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'product' | 'intro' | 'extract' | 'cover'>(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeAIConfig, setActiveAIConfig] = useState<{ provider: string; modelName?: string } | null>(null);
@@ -46,6 +50,9 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
   const [productName, setProductName] = useState(currentProduct?.name || '');
   const [fragranceNotes, setFragranceNotes] = useState(currentProduct?.fragrances?.join(', ') || '');
   const [waxMaterial, setWaxMaterial] = useState(currentProduct?.waxType || 'Cera de Soya');
+  const [coverIdea, setCoverIdea] = useState('');
+  const [isCoverImageLoading, setIsCoverImageLoading] = useState(true);
+  const [coverImageError, setCoverImageError] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -57,6 +64,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       setWaxMaterial(currentProduct?.waxType || 'Cera de Soya');
       setErrorMsg(null);
       setGeneratedResult(null);
+      setIsCoverImageLoading(true);
+      setCoverImageError(false);
 
       // Load active AI config
       fetch('/api/ai/settings')
@@ -85,6 +94,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     setIsLoading(true);
     setErrorMsg(null);
     setGeneratedResult(null);
+    setIsCoverImageLoading(true);
+    setCoverImageError(false);
 
     let task = 'product_description';
     let payload: any = {};
@@ -108,6 +119,14 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
       task = 'batch_extract';
       payload = {
         rawText: rawTextExtract,
+      };
+    } else if (activeTab === 'cover') {
+      task = 'cover_image';
+      payload = {
+        brandName,
+        seasonTag,
+        userIdea: coverIdea.trim(),
+        seed: Math.floor(Math.random() * 10000000),
       };
     }
 
@@ -163,6 +182,10 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     } else if (activeTab === 'extract' && onAddExtractedProducts) {
       if (Array.isArray(generatedResult.products)) {
         onAddExtractedProducts(generatedResult.products);
+      }
+    } else if (activeTab === 'cover' && onApplyCoverImage) {
+      if (generatedResult.imageUrl) {
+        onApplyCoverImage(generatedResult.imageUrl);
       }
     }
     onClose();
@@ -223,14 +246,28 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-stone-200 bg-stone-50 px-7 sm:px-8 pt-4 gap-6">
+        <div className="flex border-b border-stone-200 bg-stone-50 px-7 sm:px-8 pt-4 gap-4 sm:gap-6 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('cover');
+              setGeneratedResult(null);
+            }}
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap relative ${
+              activeTab === 'cover'
+                ? 'text-amber-900 border-b-2 border-amber-900'
+                : 'text-stone-400 hover:text-stone-700'
+            }`}
+          >
+            Foto de Portada ✨
+          </button>
           <button
             type="button"
             onClick={() => {
               setActiveTab('product');
               setGeneratedResult(null);
             }}
-            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all relative ${
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap relative ${
               activeTab === 'product'
                 ? 'text-amber-900 border-b-2 border-amber-900'
                 : 'text-stone-400 hover:text-stone-700'
@@ -244,13 +281,13 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
               setActiveTab('intro');
               setGeneratedResult(null);
             }}
-            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all relative ${
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap relative ${
               activeTab === 'intro'
                 ? 'text-amber-900 border-b-2 border-amber-900'
                 : 'text-stone-400 hover:text-stone-700'
             }`}
           >
-            Manifiesto & Portada
+            Manifiesto Editorial
           </button>
           <button
             type="button"
@@ -258,7 +295,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
               setActiveTab('extract');
               setGeneratedResult(null);
             }}
-            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all relative ${
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap relative ${
               activeTab === 'extract'
                 ? 'text-amber-900 border-b-2 border-amber-900'
                 : 'text-stone-400 hover:text-stone-700'
@@ -285,6 +322,66 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                     <span>Cambiar modelo o editar clave en Configuración de IA →</span>
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'cover' && (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-stone-700">
+                    Concepto o Estilo Visual Deseado
+                  </label>
+                  <span className="text-[11px] text-stone-400">
+                    Kinfolk · Editorial de Lujo · 35mm
+                  </span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={coverIdea}
+                  onChange={(e) => setCoverIdea(e.target.value)}
+                  placeholder="Ej: Bodegón de velas artesanales sobre pedestal de mármol travertino con hojas de eucalipto seco, iluminación natural suave matutina..."
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-900/30 leading-relaxed"
+                />
+              </div>
+
+              {/* Inspiration Chips */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+                  Inspiración rápida (haz clic para usar):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: '🕯️ Mármol & Minimalismo', idea: 'Velas artesanales sobre pedestal de mármol travertino con luz tenue cálida y sombras suaves estilo Kinfolk' },
+                    { label: '🌿 Botánico & Eucalipto', idea: 'Bodegón de velas de soya con ramas de eucalipto seco, cerámica rústica y tela de lino lavado' },
+                    { label: '✨ Penumbra & Calidez', idea: 'Velas encendidas en penumbra con atmósfera íntima, destellos dorados y luz de llama acogedora' },
+                    { label: '🍂 Otoño Acogedor', idea: 'Velas en tonos terracota y miel con hojas secas otoñales, frutos y madera envejecida' },
+                    { label: '🎄 Festivo & Navidad', idea: 'Velas aromáticas con ramas de pino, canela en rama y frutos secos en ambiente festivo elegante' },
+                    { label: '🤍 Pastel & Baby Shower', idea: 'Velas delicadas en tonos marfil y pastel con flores secas blancas y luz suave matutina' },
+                  ].map((chip, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCoverIdea(chip.idea)}
+                      className="px-2.5 py-1 text-[11px] rounded-lg bg-stone-100 hover:bg-amber-100/70 hover:text-amber-900 text-stone-700 border border-stone-200/80 transition cursor-pointer"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Context metadata badge */}
+              <div className="flex items-center gap-2 text-[11px] text-stone-500 bg-stone-50 px-3 py-2 rounded-lg border border-stone-200/60">
+                <span className="font-semibold text-stone-700">Contexto aplicado:</span>
+                <span>Marca: <strong className="text-stone-800">{brandName}</strong></span>
+                {seasonTag && (
+                  <>
+                    <span>·</span>
+                    <span>Colección: <strong className="text-stone-800">{seasonTag}</strong></span>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -383,7 +480,9 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                 <>
                   <Wand2 className="w-4 h-4 text-amber-400" />
                   <span>
-                    {activeTab === 'product'
+                    {activeTab === 'cover'
+                      ? 'Generar Foto de Portada con IA'
+                      : activeTab === 'product'
                       ? 'Generar Descripción Sensorial'
                       : activeTab === 'intro'
                       ? 'Redactar Manifiesto Editorial'
@@ -407,9 +506,111 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                   onClick={handleApply}
                   className="px-3 py-1 bg-amber-900 hover:bg-amber-800 text-white rounded-lg text-xs font-bold shadow-xs transition"
                 >
-                  Aplicar al Catálogo
+                  {activeTab === 'cover' ? 'Aplicar como Portada' : 'Aplicar al Catálogo'}
                 </button>
               </div>
+
+              {activeTab === 'cover' && generatedResult.imageUrl && (
+                <div className="space-y-3">
+                  <div className="relative w-full h-56 sm:h-64 rounded-xl overflow-hidden border border-amber-300/80 bg-stone-900 shadow-md flex items-center justify-center">
+                    {isCoverImageLoading && !coverImageError && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-900/90 text-stone-200 z-10 space-y-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+                        <span className="text-xs font-medium text-stone-300">
+                          Cargando fotografía editorial...
+                        </span>
+                        <span className="text-[10px] text-stone-500 font-mono">
+                          1200 × 700 px · Alta Resolución
+                        </span>
+                      </div>
+                    )}
+
+                    {coverImageError ? (
+                      <div className="flex flex-col items-center justify-center p-6 text-center space-y-2 text-stone-300 z-10">
+                        <AlertCircle className="w-6 h-6 text-amber-400" />
+                        <p className="text-xs font-semibold text-stone-200">
+                          Retraso al conectar con el servidor de renderizado
+                        </p>
+                        <p className="text-[11px] text-stone-400 max-w-xs">
+                          La imagen se está procesando. Puedes reintentar la vista previa o dar clic en "Confirmar y Aplicar Portada".
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverImageError(false);
+                            setIsCoverImageLoading(true);
+                          }}
+                          className="mt-1 px-3 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-lg text-xs font-medium border border-stone-700 transition"
+                        >
+                          Reintentar carga de vista previa
+                        </button>
+                      </div>
+                    ) : (
+                      <img
+                        src={generatedResult.imageUrl}
+                        alt="Portada generada"
+                        referrerPolicy="no-referrer"
+                        onLoad={() => setIsCoverImageLoading(false)}
+                        onError={() => {
+                          setIsCoverImageLoading(false);
+                          setCoverImageError(true);
+                        }}
+                        className={`w-full h-full object-cover object-center transition-opacity duration-300 ${
+                          isCoverImageLoading ? 'opacity-0' : 'opacity-100'
+                        }`}
+                      />
+                    )}
+
+                    {!isCoverImageLoading && !coverImageError && generatedResult.engine && (
+                      <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-[10px] font-mono text-white/90 border border-white/20 z-20">
+                        {generatedResult.engine}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1 bg-white/80 p-3 rounded-xl border border-amber-200/60">
+                    <h4 className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      <span>{generatedResult.conceptTitle || 'Composición Editorial'}</span>
+                    </h4>
+                    <p className="text-xs text-stone-600 leading-relaxed italic">
+                      "{generatedResult.aestheticSummary}"
+                    </p>
+                  </div>
+
+                  {generatedResult.promptUsed && (
+                    <details className="text-[11px] text-stone-500 bg-stone-100/80 p-2.5 rounded-xl cursor-pointer border border-stone-200/60">
+                      <summary className="font-semibold text-stone-700 hover:text-stone-900">
+                        Ver dirección de arte y prompt fotográfico
+                      </summary>
+                      <p className="mt-1.5 font-mono text-[10px] text-stone-600 leading-normal select-all bg-white p-2 rounded border border-stone-200">
+                        {generatedResult.promptUsed}
+                      </p>
+                    </details>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={handleGenerate}
+                      disabled={isLoading}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 rounded-lg transition"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                      <span>Generar otra variación</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleApply}
+                      className="px-4 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-1.5"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Confirmar y Aplicar Portada</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {activeTab === 'product' && (
                 <div className="space-y-2 text-xs">

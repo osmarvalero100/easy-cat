@@ -7,12 +7,14 @@ interface BrandContactEditorProps {
   catalog: Catalog;
   onChange: (catalog: Catalog) => void;
   onOpenAIIntro?: () => void;
+  onOpenAICover?: () => void;
 }
 
 export const BrandContactEditor: React.FC<BrandContactEditorProps> = ({
   catalog,
   onChange,
   onOpenAIIntro,
+  onOpenAICover,
 }) => {
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,16 +190,29 @@ export const BrandContactEditor: React.FC<BrandContactEditorProps> = ({
               />
             </div>
             <div className="flex-1 space-y-2">
-              <label className="inline-flex items-center gap-2 px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-medium cursor-pointer hover:bg-stone-50 shadow-2xs">
-                <Upload className="w-3.5 h-3.5 text-stone-500" />
-                <span>Cambiar Foto de Portada</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverUpload}
-                  className="hidden"
-                />
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-2 px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-medium cursor-pointer hover:bg-stone-50 shadow-2xs">
+                  <Upload className="w-3.5 h-3.5 text-stone-500" />
+                  <span>Subir Imagen</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
+                    className="hidden"
+                  />
+                </label>
+                {onOpenAICover && (
+                  <button
+                    type="button"
+                    onClick={onOpenAICover}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-amber-300/80 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg text-xs font-semibold shadow-2xs transition"
+                    title="Diseñar fotografía de portada con Inteligencia Artificial"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Generar con IA ✨</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="url"
                 value={catalog.coverImage}

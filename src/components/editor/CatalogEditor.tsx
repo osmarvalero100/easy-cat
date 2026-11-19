@@ -12,6 +12,7 @@ interface CatalogEditorProps {
   onChange: (updatedCatalog: Catalog) => void;
   onOpenAIIntro?: () => void;
   onOpenAIExtract?: () => void;
+  onOpenAICover?: () => void;
   onSave?: () => void;
   hasUnsavedChanges?: boolean;
   isSaving?: boolean;
@@ -22,6 +23,7 @@ export const CatalogEditor: React.FC<CatalogEditorProps> = ({
   onChange,
   onOpenAIIntro,
   onOpenAIExtract,
+  onOpenAICover,
   onSave,
   hasUnsavedChanges = false,
   isSaving = false,
@@ -124,6 +126,7 @@ export const CatalogEditor: React.FC<CatalogEditorProps> = ({
             catalog={catalog}
             onChange={onChange}
             onOpenAIIntro={onOpenAIIntro}
+            onOpenAICover={onOpenAICover}
           />
         )}
       </div>

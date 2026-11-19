@@ -58,13 +58,38 @@ export async function compressImageDataUrl(
   }
 }
 
-export const readFileAsDataUrl = (file: File): Promise<string> =>
+export const readFileAsDataUrl = (file: File | Blob): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+
+/**
+ * Downloads a remote image URL (e.g. from AI image generation or Unsplash)
+ * and converts it into a compressed data URL for permanent offline storage.
+ * Falls back to returning the original URL if fetching or converting fails.
+ */
+export async function urlToCompressedDataUrl(
+  url: string,
+  maxDim = 1600,
+  quality = 0.82
+): Promise<string> {
+  if (!url) return '';
+  if (url.startsWith('data:image/')) {
+    return compressImageDataUrl(url, maxDim, quality);
+  }
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return url;
+    const blob = await res.blob();
+    const dataUrl = await readFileAsDataUrl(blob);
+    return await compressImageDataUrl(dataUrl, maxDim, quality);
+  } catch {
+    return url;
+  }
+}
 
 const payloadSize = (catalog: Catalog) => new Blob([JSON.stringify(catalog)]).size;
 

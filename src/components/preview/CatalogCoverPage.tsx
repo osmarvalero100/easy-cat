@@ -90,7 +90,7 @@ export const CatalogCoverPage: React.FC<CatalogCoverPageProps> = ({
           <img
             src={catalog.coverImage}
             alt={catalog.title}
-            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
             className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
           />
         </div>

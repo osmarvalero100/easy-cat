@@ -10,7 +10,7 @@ try {
 }
 
 interface GenerateRequest {
-  task: 'product_description' | 'batch_extract' | 'intro_text' | 'suggest_palette';
+  task: 'product_description' | 'batch_extract' | 'intro_text' | 'suggest_palette' | 'cover_image';
   payload: any;
   provider?: string;
   model?: string;
@@ -100,6 +100,30 @@ Responde únicamente un JSON con la estructura:
       "fragrances": ["Aroma 1", "Aroma 2"]
     }
   ]
+}`;
+    } else if (task === 'cover_image') {
+      systemPrompt =
+        'Eres un Director de Arte y Fotógrafo Comercial galardonado de editoriales de lujo (estilo Kinfolk, Cereal Magazine, Zara Home, Diptyque). Diseñas prompts visuales maestros para generadores de imágenes fotorrealistas de alta gama.';
+      userPrompt = `Diseña un prompt fotográfico maestro en INGLÉS para la portada horizontal (proporción 12:7 o 16:9) de un catálogo editorial de alta gama.
+
+Contexto del catálogo:
+- Marca: ${payload.brandName || 'Artesanal y Botánico'}
+- Título o Colección: ${payload.catalogTitle || 'Catálogo Editorial'}
+- Temporada o Estética: ${payload.seasonTag || 'Minimalista y Sensorial'}
+- Idea del usuario: ${payload.userIdea || 'Bodegón botánico con velas artesanales sobre mármol o lino con luz natural cálida'}
+
+REGLAS CRÍTICAS PARA EL PROMPT DE IMAGEN:
+1. Debe estar 100% en INGLÉS.
+2. Composición: Fotografía editorial horizontal, bodegón de estudio o ambiente acogedor, velas artesanales con acabados puros (cera de soya o abeja), texturas nobles (mármol travertino, lino lavado, cerámica mate, madera noble), iluminación natural suave matutina o de hora dorada, sombras suaves y poéticas.
+3. Especificaciones técnicas: Shot on Hasselblad medium format, 35mm lens, f/2.8, shallow depth of field, natural soft light, hyper-realistic, 8k resolution, cinematic grain, clean negative space.
+4. PROHIBIDO TOTALMENTE: NO texto, NO palabras, NO tipografías, NO logos, NO marcas de agua en la imagen (el catálogo pondrá los títulos de forma digital encima).
+5. Extensión: Entre 40 y 75 palabras.
+
+Responde ÚNICAMENTE un JSON con esta estructura exacta:
+{
+  "imagePrompt": "Master photographic prompt in English...",
+  "conceptTitle": "Título corto y poético en español para el concepto (ej: Calidez Botánica en Travertino)",
+  "aestheticSummary": "Breve explicación en español de 1-2 frases sobre la composición visual y la iluminación elegida"
 }`;
     } else {
       return NextResponse.json({ error: 'Tarea de IA no reconocida' }, { status: 400 });
@@ -299,6 +323,79 @@ Responde únicamente un JSON con la estructura:
       parsedResult = JSON.parse(cleanedText);
     } catch {
       parsedResult = { raw: aiResultText };
+    }
+
+    if (task === 'cover_image') {
+      const artPrompt =
+        (parsedResult as any).imagePrompt ||
+        payload.userIdea ||
+        'Horizontal editorial photography of luxury artisanal candles on travertine stone warm natural morning sunlight Kinfolk aesthetic 35mm';
+      const seed = typeof payload.seed === 'number' ? payload.seed : Math.floor(Math.random() * 10000000);
+      let imageUrl = '';
+      let engine = 'Flux';
+
+      // 1. If OpenAI provider is active, attempt DALL-E 3
+      if (setting.provider === 'openai' && setting.apiKey) {
+        try {
+          const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${setting.apiKey}`,
+            },
+            body: JSON.stringify({
+              model: 'dall-e-3',
+              prompt: `${artPrompt}. High-end commercial catalog photography, Kinfolk magazine style, horizontal landscape, 8k resolution, no typography, no text, no letters.`,
+              n: 1,
+              size: '1792x1024',
+              quality: 'standard',
+            }),
+            signal: AbortSignal.timeout(30000),
+          });
+
+          if (dalleRes.ok) {
+            const dalleData = await dalleRes.json();
+            const tempUrl = dalleData.data?.[0]?.url;
+            if (tempUrl) {
+              try {
+                const imgFetch = await fetch(tempUrl);
+                if (imgFetch.ok) {
+                  const buf = Buffer.from(await imgFetch.arrayBuffer());
+                  imageUrl = `data:image/jpeg;base64,${buf.toString('base64')}`;
+                  engine = 'DALL-E 3';
+                } else {
+                  imageUrl = tempUrl;
+                }
+              } catch {
+                imageUrl = tempUrl;
+              }
+            }
+          } else {
+            console.warn('OpenAI DALL-E 3 returned error, falling back to Flux');
+          }
+        } catch (dalleErr) {
+          console.warn('Error calling OpenAI DALL-E 3, falling back to Flux:', dalleErr);
+        }
+      }
+
+      // 2. Fallback / Default: Pollinations Flux
+      if (!imageUrl) {
+        const cleanPrompt = encodeURIComponent(artPrompt.slice(0, 350));
+        imageUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=1200&height=700&model=flux&nologo=true&seed=${seed}`;
+        engine = 'Flux';
+      }
+
+      return NextResponse.json({
+        success: true,
+        result: {
+          imageUrl,
+          promptUsed: artPrompt,
+          conceptTitle: (parsedResult as any).conceptTitle || 'Composición Editorial',
+          aestheticSummary: (parsedResult as any).aestheticSummary || 'Bodegón botánico con iluminación natural suave',
+          seed,
+          engine,
+        },
+      });
     }
 
     return NextResponse.json({ success: true, result: parsedResult });

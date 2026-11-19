@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Catalog, Product, Project, User as UserType, hasCustomLogo, mergeContactWithProjectDefaults } from '../types/catalog';
 import { INITIAL_CATALOG } from '../data/defaultCatalog';
 import { saveCatalogToStorage, getCatalogFromStorage } from '../lib/storage';
-import { shrinkCatalogForSave, getCatalogPayloadSize, MAX_SAVE_PAYLOAD_BYTES } from '../lib/imageCompression';
+import { shrinkCatalogForSave, getCatalogPayloadSize, MAX_SAVE_PAYLOAD_BYTES, urlToCompressedDataUrl } from '../lib/imageCompression';
 import { HeaderNavbar } from '../components/shared/HeaderNavbar';
 import { CatalogEditor } from '../components/editor/CatalogEditor';
 import { CatalogPreview } from '../components/preview/CatalogPreview';
@@ -45,7 +45,7 @@ export default function EasyCatMainPage() {
   const [isProjectSettingsNew, setIsProjectSettingsNew] = useState<boolean>(false);
   const [isAISettingsOpen, setIsAISettingsOpen] = useState<boolean>(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState<boolean>(false);
-  const [aiAssistantTab, setAiAssistantTab] = useState<'product' | 'intro' | 'extract'>('product');
+  const [aiAssistantTab, setAiAssistantTab] = useState<'product' | 'intro' | 'extract' | 'cover'>('cover');
 
   // Mobile tab state in Studio
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
@@ -214,6 +214,31 @@ export default function EasyCatMainPage() {
     });
     setHasUnsavedChanges(true);
     setLastModifiedTime(Date.now());
+  };
+
+  const handleApplyCoverImage = async (url: string) => {
+    // 1. Immediately apply to catalog state so user sees it in real-time
+    setCatalog((prev) => {
+      const updated = { ...prev, coverImage: url };
+      saveCatalogToStorage(updated);
+      return updated;
+    });
+    setHasUnsavedChanges(true);
+    setLastModifiedTime(Date.now());
+
+    // 2. Asynchronously convert remote image to persistent compressed dataUrl
+    try {
+      const permanentDataUrl = await urlToCompressedDataUrl(url, 1600, 0.82);
+      if (permanentDataUrl && permanentDataUrl !== url) {
+        setCatalog((prev) => {
+          const updated = { ...prev, coverImage: permanentDataUrl };
+          saveCatalogToStorage(updated);
+          return updated;
+        });
+      }
+    } catch (e) {
+      console.warn('Could not compress cover image to dataUrl, using original URL:', e);
+    }
   };
 
   const handleAddExtractedProducts = (extracted: Partial<Product>[]) => {
@@ -540,6 +565,10 @@ export default function EasyCatMainPage() {
                     setAiAssistantTab('extract');
                     setIsAIAssistantOpen(true);
                   }}
+                  onOpenAICover={() => {
+                    setAiAssistantTab('cover');
+                    setIsAIAssistantOpen(true);
+                  }}
                   onSave={handleSaveToDb}
                   hasUnsavedChanges={hasUnsavedChanges}
                   isSaving={isSaving}
@@ -633,6 +662,7 @@ export default function EasyCatMainPage() {
         onApplyIntroText={handleApplyIntroText}
         onAddExtractedProducts={handleAddExtractedProducts}
         onApplyDescription={handleApplyDescription}
+        onApplyCoverImage={handleApplyCoverImage}
         onOpenAISettings={() => {
           setIsAIAssistantOpen(false);
           setIsAISettingsOpen(true);
